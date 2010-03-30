@@ -130,6 +130,7 @@ class ProfileController extends Gdn_Controller {
    }
    
    public function Activity($UserReference = '') {
+      $this->Permission('Garden.Users.View');
       $this->SetTabView($UserReference, 'Activity');
       $this->ActivityModel = new Gdn_ActivityModel();
       $Session = Gdn::Session();

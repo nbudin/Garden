@@ -29,6 +29,7 @@ class ActivityController extends Gdn_Controller {
       parent::Initialize();
    }
    public function Index() {
+      $this->Permission('Garden.Activity.View');
       $this->AddJsFile('activity.js');
       $this->Title(Translate('Recent Activity'));
          
