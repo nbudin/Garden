@@ -117,13 +117,17 @@ $PermissionModel->Define(array(
 	'Garden.Users.Edit',
 	'Garden.Users.Delete',
 	'Garden.Users.Approve',
-	'Garden.Activity.Delete'
+        'Garden.Users.View',
+	'Garden.Activity.Delete',
+	'Garden.Activity.View'
 	));
 
 // Set initial member permissions.
 $PermissionModel->Save(array(
 	'RoleID' => 8,
-	'Garden.Signin.Allow' => 1
+	'Garden.Signin.Allow' => 1,
+        'Garden.Users.View' => 1,
+        'Garden.Activity.View' => 1
 	));
 
 // Set initial admininstrator permissions.
@@ -142,7 +146,9 @@ $PermissionModel->Save(array(
 	'Garden.Users.Edit' => 1,
 	'Garden.Users.Delete' => 1,
 	'Garden.Users.Approve' => 1,
-	'Garden.Activity.Delete' => 1
+        'Garden.Users.View' => 1,
+	'Garden.Activity.Delete' => 1,
+	'Garden.Activity.View' => 1
 	));
 
 
