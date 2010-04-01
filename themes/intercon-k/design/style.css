@@ -233,8 +233,8 @@ div.Errors ul li {
 /* Note: Warning, Alert & Info are simple boxes that can be used to wrap message
    strings & imply importance. */
 .Warning {
-   background: #ffc;
-   border: 1px solid #ff9;
+   background: #fbc926;
+   border: 1px solid #ca9a00;
    color: #000;
    padding: 6px 8px;
    -moz-border-radius: 3px;
