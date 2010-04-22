@@ -1,4 +1,4 @@
-// This file contains javascript that is specific to the garden/profile controller.
+// This file contains javascript that is specific to the dashboard/profile controller.
 jQuery(document).ready(function($) {
    
    $('a.ClearConversation').popup({
@@ -9,24 +9,6 @@ jQuery(document).ready(function($) {
    $('textarea.MessageBox, textarea.TextBox').livequery(function() {
       $(this).autogrow();
    });
-   
-   // Make the entire row clickable on the conversation list.
-   $.fn.hoverRow = function() {
-      return this.each(function() {
-         var row = this;
-         var anchor = $(row).find('a.Message');
-         if (anchor.length > 0) {
-            $(row).hover(function() {
-               $(row).addClass('Active');
-            }, function() {
-               $(row).removeClass('Active');            
-            }).click(function() {
-               document.location = $(anchor).attr('href');
-            });
-         }
-      });
-   }   
-   $('#Conversations li').hoverRow();
    
    // Hijack "add message" clicks and handle via ajax...
    $.fn.handleMessageForm = function() {
@@ -40,7 +22,7 @@ jQuery(document).ready(function($) {
          postValues += '&'+button.name+'='+button.value;
          var prefix = textbox.attr('name').replace('Message', '');
          // Get the last message id on the page
-         var messages = $('#Conversation li');
+         var messages = $('ul.Conversation li');
          var lastMessage = $(messages).get(messages.length - 1);
          var lastMessageID = $(lastMessage).attr('id');
          postValues += '&' + prefix + 'LastMessageID=' + lastMessageID;
@@ -51,7 +33,7 @@ jQuery(document).ready(function($) {
             dataType: 'json',
             error: function(XMLHttpRequest, textStatus, errorThrown) {
                $('.Popup').remove();
-               $.popup({}, definition('TransportError').replace('%s', textStatus));
+               $.popup({}, XMLHttpRequest.responseText);
             },
             success: function(json) {
                // Remove any old errors from the form
@@ -66,7 +48,7 @@ jQuery(document).ready(function($) {
                   clearMessageForm();                
    
                   // And show the new comments
-                  $('#Conversation').append(json.Data);
+                  $('ul.Conversation').append(json.Data);
                   
                   // Remove any "More" pager links
                   $('#PagerMore').remove();
@@ -76,7 +58,7 @@ jQuery(document).ready(function($) {
                   if (target.offset()) {
                      $('html,body').animate({scrollTop: target.offset().top}, 'fast');
                   }
-                  inform(json.StatusMessage);
+                  gdn.inform(json.StatusMessage);
                }
             }
          });
@@ -98,7 +80,7 @@ jQuery(document).ready(function($) {
    // Enable multicomplete on selected inputs
    $('.MultiComplete').livequery(function() {
       $(this).autocomplete(
-         combinePaths(definition('WebRoot'), 'index.php/garden/user/autocomplete/'),
+         gdn.combinePaths(gdn.definition('WebRoot'), 'index.php/dashboard/user/autocomplete/'),
          {
             minChars: 1,
             multiple: true,
@@ -110,7 +92,7 @@ jQuery(document).ready(function($) {
    
    // Set up paging
    $('.MorePager').morepager({
-      pageContainerSelector: '#Conversations, #Conversation'
+      pageContainerSelector: 'ul.Conversations, ul.Conversation'
    });
    
    $('#Form_AddPeople :submit').click(function() {
@@ -130,10 +112,10 @@ jQuery(document).ready(function($) {
          error: function(XMLHttpRequest, textStatus, errorThrown) {
             $('span.Progress').remove();
             $(btn).show();
-            $.popup({}, definition('TransportError').replace('%s', textStatus));
+            $.popup({}, XMLHttpRequest.responseText);
          },
          success: function(json) {
-            inform(json.StatusMessage);
+            gdn.inform(json.StatusMessage);
             if (json.RedirectUrl)
               setTimeout("document.location='" + json.RedirectUrl + "';", 300);
          }

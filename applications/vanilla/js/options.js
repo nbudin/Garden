@@ -8,7 +8,7 @@ jQuery(document).ready(function($) {
             $(this).hide();
             this.style.visibility = 'hidden';
             // Only hide the "options" link if it's container is not class "Active"
-            if (!$(this).parents('li.DiscussionRow').hasClass('Active')) {
+            if (!$(this).parents('li.Item ').hasClass('Active')) {
                $(this).parents('ul.Options').hide();
             }
          }
@@ -27,7 +27,7 @@ jQuery(document).ready(function($) {
          data: 'DeliveryType=BOOL&DeliveryMethod=JSON',
          dataType: 'json',
          error: function(XMLHttpRequest, textStatus, errorThrown) {
-            $.popup({}, definition('TransportError').replace('%s', textStatus));
+            $.popup({}, XMLHttpRequest.responseText);
          },
          success: function(json) {
             // Is this the last item in the announcements list?
@@ -43,52 +43,21 @@ jQuery(document).ready(function($) {
       });
       return false;
    });
-   
-   // 2. Bookmark/Unbookmark discussion
-   $('a.BookmarkDiscussion').livequery('click', function() {
-      var btn = this;
-      var row = $(btn).parents('li.DiscussionRow');
-      
-      $.ajax({
-         type: "POST",
-         url: $(btn).attr('href'),
-         data: 'DeliveryType=BOOL&DeliveryMethod=JSON',
-         dataType: 'json',
-         error: function(XMLHttpRequest, textStatus, errorThrown) {
-            $.popup({}, definition('TransportError').replace('%s', textStatus));
-         },
-         success: function(json) {
-            if (json.State)
-               $(row).addClass('Bookmarked');
-            else
-               $(row).removeClass('Bookmarked');
-               
-            if (json.LinkText)
-               $(btn).text(json.LinkText);
-            
-            if (json.BookmarkSum) {
-               $('#Toolbar li.Bookmarks a').text(json.BookmarkSum);
-               $('#Toolbar li.Bookmarks').effect('highlight', {}, 1000);
-            }
-         }
-      });
-      return false;
-   });
-   
-   // 3. Announce discussion
+
+   // 2. Announce discussion
    $('a.AnnounceDiscussion').livequery('click', function() {
       var btn = this;
-      var row = $(btn).parents('li.DiscussionRow');
+      var row = $(btn).parents('li.Item');
       $.ajax({
          type: "POST",
          url: $(btn).attr('href'),
          data: 'DeliveryType=BOOL&DeliveryMethod=JSON',
          dataType: 'json',
          error: function(XMLHttpRequest, textStatus, errorThrown) {
-            $.popup({}, definition('TransportError').replace('%s', textStatus));
+            $.popup({}, XMLHttpRequest.responseText);
          },
          success: function(json) {
-            inform(json.StatusMessage);
+            gdn.inform(json.StatusMessage);
             if (json.RedirectUrl)
               setTimeout("document.location='" + json.RedirectUrl + "';", 300);
          }
@@ -96,12 +65,12 @@ jQuery(document).ready(function($) {
       return false;
    });
    
-   // 4. Sink discussion
+   // 3. Sink discussion
    $('a.SinkDiscussion').popup({
       confirm: true,
       followConfirm: false,
       afterConfirm: function(json, sender) {
-         var row = $(sender).parents('li.DiscussionRow');
+         var row = $(sender).parents('li.Item');
          if (json.State)
             $(row).addClass('Sink');
          else
@@ -112,12 +81,12 @@ jQuery(document).ready(function($) {
       }
    });
 
-   // 5. Close discussion
+   // 4. Close discussion
    $('a.CloseDiscussion').popup({
       confirm: true,
       followConfirm: false,
       afterConfirm: function(json, sender) {
-         var row = $(sender).parents('li.DiscussionRow');
+         var row = $(sender).parents('li.Item');
          if (json.State)
             $(row).addClass('Close');
          else
@@ -128,13 +97,13 @@ jQuery(document).ready(function($) {
       }
    });
 
-   // 6. Delete discussion
+   // 5. Delete discussion
    $('a.DeleteDiscussion, a.DeleteDraft').popup({
       confirm: true,
       followConfirm: false,
       deliveryType: 'BOOL', // DELIVERY_TYPE_BOOL
       afterConfirm: function(json, sender) {
-         var row = $(sender).parents('li.DiscussionRow');
+         var row = $(sender).parents('li.Item');
          if (json.ErrorMessage) {
             $.popup({}, json.ErrorMessage);
          } else {

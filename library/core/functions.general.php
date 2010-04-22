@@ -9,10 +9,16 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
 */
 
 function __autoload($ClassName) {
-   // echo $ClassName;
    if (class_exists('HTMLPurifier_Bootstrap', FALSE) && HTMLPurifier_Bootstrap::autoload($ClassName))
       return true;
+
    if(!class_exists('Gdn_FileSystem', FALSE))
+      return false;
+      
+   if(!class_exists('Gdn_FileCache', FALSE))
+      return false;
+
+   if(!class_exists('Gdn', FALSE))
       return false;
    
    if(substr($ClassName, 0, 4) === 'Gdn_')
@@ -29,12 +35,11 @@ function __autoload($ClassName) {
 
    // If this is a model, look in the models folder(s)
    if (strtolower(substr($ClassName, -5)) == 'model')
-      $LibraryPath = Gdn_FileSystem::FindByMapping('library_mappings.php', 'Library', PATH_APPLICATIONS, $ApplicationWhiteList, 'models' . DS . $LibraryFileName);
+      $LibraryPath = Gdn_FileSystem::FindByMapping('library', PATH_APPLICATIONS, $ApplicationWhiteList, 'models' . DS . $LibraryFileName);
 
    if ($LibraryPath === FALSE)
       $LibraryPath = Gdn_FileSystem::FindByMapping(
-         'library_mappings.php',
-         'Library',
+         'library',
          PATH_LIBRARY,
          array(
             'core',
@@ -47,7 +52,7 @@ function __autoload($ClassName) {
 
    // If it still hasn't been found, check for modules
    if ($LibraryPath === FALSE)
-      $LibraryPath = Gdn_FileSystem::FindByMapping('library_mappings.php', 'Library', PATH_APPLICATIONS, $ApplicationWhiteList, 'modules' . DS . $LibraryFileName);
+      $LibraryPath = Gdn_FileSystem::FindByMapping('library', PATH_APPLICATIONS, $ApplicationWhiteList, 'modules' . DS . $LibraryFileName);
 
    if ($LibraryPath !== FALSE)
       include_once($LibraryPath);
@@ -58,7 +63,7 @@ if (!function_exists('AddActivity')) {
     * A convenience function that allows adding to the activity table with a single line.
     */
    function AddActivity($ActivityUserID, $ActivityType, $Story = '', $RegardingUserID = '', $Route = '', $SendEmail = '') {
-      $ActivityModel = new Gdn_ActivityModel();
+      $ActivityModel = new ActivityModel();
       return $ActivityModel->Add($ActivityUserID, $ActivityType, $Story, $RegardingUserID, '', $Route, $SendEmail);
    }
 }
@@ -83,10 +88,28 @@ if (!function_exists('ArrayCombine')) {
          return $Array1;
    }
 }
-
+/*
+ We now support PHP 5.2.0 - Which should make this declaration unnecessary.
 if (!function_exists('array_fill_keys')) {
    function array_fill_keys($Keys, $Val) {
       return array_combine($Keys,array_fill(0,count($Keys),$Val));
+   }
+}
+*/
+if (!function_exists('ArrayHasValue')) {
+   /**
+    * Searches $Array (and all arrays it contains) for $Value.
+    */ 
+   function ArrayHasValue($Array, $Value) {
+      if (in_array($Value, $Array)) {
+         return TRUE;
+      } else {
+         foreach ($Array as $k => $v) {
+            if (is_array($v))
+               return ArrayHasValue($v, $Value);
+         }
+         return FALSE;
+      }
    }
 }
 
@@ -143,11 +166,8 @@ if (!function_exists('ArrayValue')) {
     * @param string The default value to return if the requested value is not found. Default is FALSE.
     */
    function ArrayValue($Needle, $Haystack, $Default = FALSE) {
-      $Return = $Default;
-      if (is_array($Haystack) === TRUE && array_key_exists($Needle, $Haystack) === TRUE) {
-         $Return = $Haystack[$Needle];
-      }
-      return $Return;
+      $Result = GetValue($Needle, $Haystack, $Default);
+		return $Result;
    }
 }
 
@@ -217,6 +237,19 @@ if (!function_exists('Attribute')) {
          }
       }
       return $Return;
+   }
+}
+
+if (!function_exists('C')) {
+   /**
+    * Retrieves a configuration setting.
+    * @param string $Name The name of the configuration setting. Settings in different sections are seperated by a dot ('.')
+    * @param mixed $Default The result to return if the configuration setting is not found.
+    * @return mixed The configuration setting.
+    * @see Gdn::Config()
+    */
+   function C($Name = FALSE, $Default = FALSE) {
+      return Gdn::Config($Name, $Default);
    }
 }
 
@@ -348,7 +381,15 @@ if (!function_exists('ConsolidateArrayValuesByKey')) {
    function ConsolidateArrayValuesByKey($Array, $Key, $ValueKey = '', $DefaultValue = NULL) {
       $Return = array();
       foreach ($Array as $Index => $AssociativeArray) {
-         if (array_key_exists($Key, $AssociativeArray)) {
+			if(is_object($AssociativeArray)) {
+				if($ValueKey === '') {
+					$Return[] = $AssociativeArray->$Key;
+				} elseif(property_exists($AssociativeArray, $ValueKey)) {
+					$Return[$AssociativeArray[$Key]] = $AssociativeArray->$ValueKey;
+				} else {
+					$Return[$AssociativeArray->$Key] = $DefaultValue;
+				}
+			} elseif (array_key_exists($Key, $AssociativeArray)) {
             if($ValueKey === '') {
                $Return[] = $AssociativeArray[$Key];
             } elseif (array_key_exists($ValueKey, $AssociativeArray)) {
@@ -362,6 +403,8 @@ if (!function_exists('ConsolidateArrayValuesByKey')) {
    }
 }
 
+/*
+ We now support PHP 5.2.0 - Which should make this declaration unnecessary.
 if (!function_exists('filter_input')) {
    if (!defined('INPUT_GET')) define('INPUT_GET', 'INPUT_GET');
    if (!defined('INPUT_POST')) define('INPUT_POST', 'INPUT_POST');
@@ -383,6 +426,7 @@ if (!function_exists('filter_input')) {
       return $Value;     
    }
 }
+*/
 
 if (!function_exists('ForceBool')) {
    function ForceBool($Value, $DefaultValue = FALSE, $True = TRUE, $False = FALSE) {
@@ -400,8 +444,9 @@ if (!function_exists('ForceBool')) {
 
 if (!function_exists('getallheaders')) {
    /**
-    * Needed this to fix a bug:
-    * http://github.com/lussumo/Garden/issues/closed#issue/3/comment/19938
+    * If PHP isn't running as an apache module, getallheaders doesn't exist in
+    * some systems.
+    * Ref: http://github.com/lussumo/Garden/issues/closed#issue/3/comment/19938
     */
    function getallheaders() {
       foreach($_SERVER as $name => $value)
@@ -477,6 +522,26 @@ if (!function_exists('GetPostValue')) {
    }
 }
 
+if (!function_exists('GetValue')) {
+	/**
+	 * Return the value from an associative array or an object.
+	 *
+	 * @param string $Key The key or property name of the value.
+	 * @param mixed $Collection The array or object to search.
+	 * @param mixed $Default The value to return if the key does not exist.
+	 * @return mixed The value from the array or object.
+	 */
+	function GetValue($Key, $Collection, $Default = FALSE) {
+		$Result = $Default;
+		if(is_array($Collection) && array_key_exists($Key, $Collection))
+			$Result = $Collection[$Key];
+		elseif(is_object($Collection) && property_exists($Collection, $Key))
+			$Result = $Collection->$Key;
+			
+      return $Result;
+	}
+}
+
 if (!function_exists('InArrayI')) {
    /**
     * Case-insensitive version of php's native in_array function.
@@ -498,30 +563,6 @@ if (!function_exists('IsTimestamp')) {
          @date("d", $Stamp),
          @date("Y", $Stamp)
       );
-   }
-}
-
-if (!function_exists('json_encode')) {
-   require_once PATH_LIBRARY . DS . 'vendors' . DS . 'JSON' . DS . 'JSON.php';
-   
-   function json_decode($arg, $assoc = FALSE) {
-      global $services_json;
-      if (!isset($services_json)) {
-         $services_json = new Services_JSON();
-      }
-      $obj = $services_json->decode($arg);
-      if ($assoc)
-         return Format::ObjectAsArray($obj);
-      else
-         return $obj;
-   }
-   
-   function json_encode($arg) {
-      global $services_json;
-      if (!isset($services_json)) {
-         $services_json = new Services_JSON();
-      }
-      return $services_json->encode($arg);
    }
 }
 
@@ -558,25 +599,11 @@ if (!function_exists('Now')) {
    }
 }
 
-if (!function_exists('ObjectValue')) {
-   /**
-    * Similar to ArrayValue, except it returns the value associated with
-    * $Property in $Object or FALSE if not found. 
-    *
-    * @param string The property to look for in $Object.
-    * @param object The object in which to search for $Property.
-    * @param string The default value to return if the requested property is not found. Default is FALSE.
-    */
-   function ObjectValue($Property, $Object, $Default = FALSE) {
-      $Return = $Default;
-      if (is_object($Object) === TRUE && property_exists($Object, $Property) === TRUE) {
-         $Return = $Object->$Property;
-      }
-      return $Return;
-   }
-}
-
 if (!function_exists('parse_ini_string')) {
+   /**
+    * parse_ini_string not supported until PHP 5.3.0, and we currently support
+    * PHP 5.2.0.
+    */
    function parse_ini_string ($Ini) {
       $Lines = split("\n", $Ini);
       $Result = array();
@@ -613,44 +640,70 @@ if (!function_exists('ProxyRequest')) {
     * response.
     *
     * @param string $Url The full url to the page being requested (including http://)
-    * @param array $PostFields The collection of post values to send with the request. Must be in associative array format, or nothing will be sent.
     */
-   function ProxyRequest($Url, $PostFields = FALSE) {
+   function ProxyRequest($Url) {
+      $UrlParts = parse_url($Url);
+      $Scheme = GetValue('scheme', $UrlParts, 'http');
+      $Host = GetValue('host', $UrlParts, '');
+      $Port = GetValue('port', $UrlParts, '80');
+      $Path = GetValue('path', $UrlParts, '');
+      $Query = GetValue('query', $UrlParts, '');
+      // Get the cookie.
+      $Cookie = '';
+      foreach($_COOKIE as $Key => $Value) {
+         if(strncasecmp($Key, 'XDEBUG', 6) == 0)
+            continue;
+         
+         if(strlen($Cookie) > 0)
+            $Cookie .= '; ';
+            
+         $Cookie .= $Key.'='.urlencode($Value);
+      }
+
       $Response = '';
-      $Query = is_array($PostFields) ? http_build_query($PostFields) : '';
-      
       if (function_exists('curl_init')) {
+         $Url = $Scheme.'://'.$Host.$Path;
          $Handler = curl_init();
          curl_setopt($Handler, CURLOPT_URL, $Url);
          curl_setopt($Handler, CURLOPT_HEADER, 0);
          curl_setopt($Handler, CURLOPT_RETURNTRANSFER, 1);
+         if ($Cookie != '')
+            curl_setopt($Handler, CURLOPT_COOKIE, $Cookie);
+            
          if ($Query != '') {
             curl_setopt($Handler, CURLOPT_POST, 1);
             curl_setopt($Handler, CURLOPT_POSTFIELDS, $Query);
          }
          $Response = curl_exec($Handler);
+         if ($Response == FALSE)
+            $Response = curl_error($Handler);
+            
          curl_close($Handler);
       } else if (function_exists('fsockopen')) {
-         $UrlParts = parse_url($Url);
-         $Host = ArrayValue('host', $UrlParts, '');
-         $Port = ArrayValue('port', $UrlParts, '80');
-         $Path = ArrayValue('path', $UrlParts, '');
          $Referer = Gdn_Url::WebRoot(TRUE);
       
          // Make the request
          $Pointer = @fsockopen($Host, $Port, $ErrorNumber, $Error);
          if (!$Pointer)
             throw new Exception(sprintf(T('Encountered an error while making a request to the remote server (%1$s): [%2$s] %3$s'), $Url, $ErrorNumber, $Error));
+   
+         if(strlen($Cookie) > 0)
+            $Cookie = "Cookie: $Cookie\r\n";
          
-         $Header = "GET $Path?$Query HTTP/1.1\r\n" .
-            "Host: $Host\r\n" .
+         $Header = "GET $Path?$Query HTTP/1.1\r\n"
+            ."Host: $Host\r\n"
             // If you've got basic authentication enabled for the app, you're going to need to explicitly define the user/pass for this fsock call
             // "Authorization: Basic ". base64_encode ("username:password")."\r\n" . 
-            "User-Agent: Vanilla/2.0\r\n" .
-            "Accept: */*\r\n" .
-            "Accept-Charset: utf-8;\r\n" .
-            "Referer: $Referer\r\n" .
-            "Connection: close\r\n\r\n";
+            ."User-Agent: Vanilla/2.0\r\n"
+            ."Accept: */*\r\n"
+            ."Accept-Charset: utf-8;\r\n"
+            ."Referer: $Referer\r\n"
+            ."Connection: close\r\n";
+            
+         if ($Cookie != '')
+            $Header .= $Cookie;
+         
+         $Header .= "\r\n";
          
          // Send the headers and get the response
          fputs($Pointer, $Header);
@@ -771,19 +824,21 @@ if (!function_exists('StringIsNullOrEmpty')) {
    }
 }
 
-if (!function_exists('Translate')) {
-   /**
-	 * Translates a code into the selected locale's definition.
+
+if (!function_exists('SetValue')) {
+	/**
+	 * Set the value on an object/array.
 	 *
-	 * @param string $Code The code related to the language-specific definition.
-	 * @param string $Default The default value to be displayed if the translation code is not found.
-	 * @return string The translated string or $Code if there is no value in $Default.
-	 * @deprecated
-	 * @see T()
+	 * @param string $Needle The key or property name of the value.
+	 * @param mixed $Haystack The array or object to set.
+	 * @param mixed $Value The value to set.
 	 */
-   function Translate($Code, $Default = '') {
-      return Gdn::Translate($Code, $Default);
-   }
+	function SetValue($Key, $Collection, $Value) {
+		if(is_array($Collection))
+			$Collection[$Key] = $Value;
+		elseif(is_object($Collection))
+			$Collection->$Key = $Value;
+	}
 }
 
 if (!function_exists('T')) {
@@ -793,8 +848,24 @@ if (!function_exists('T')) {
 	 * @param string $Code The code related to the language-specific definition.
 	 * @param string $Default The default value to be displayed if the translation code is not found.
 	 * @return string The translated string or $Code if there is no value in $Default.
+	 * @see Gdn::Translate()
 	 */
    function T($Code, $Default = '') {
+      return Gdn::Translate($Code, $Default);
+   }
+}
+
+if (!function_exists('Translate')) {
+   /**
+	 * Translates a code into the selected locale's definition.
+	 *
+	 * @param string $Code The code related to the language-specific definition.
+	 * @param string $Default The default value to be displayed if the translation code is not found.
+	 * @return string The translated string or $Code if there is no value in $Default.
+	 * @deprecated
+	 * @see Gdn::Translate()
+	 */
+   function Translate($Code, $Default = '') {
       return Gdn::Translate($Code, $Default);
    }
 }

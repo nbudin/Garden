@@ -4,7 +4,7 @@ $CancelUrl = '/vanilla/discussions';
 if (Gdn::Config('Vanilla.Categories.Use') === TRUE && $this->CategoryID > 0 && $this->CategoryData->NumRows() > 0) {
    foreach ($this->CategoryData->Result() as $Cat) {
       if ($Cat->CategoryID == $this->CategoryID) {
-         $CancelUrl = '/vanilla/discussions/0/'.$Cat->CategoryID.'/'.Format::Url($Cat->Name);
+         $CancelUrl = '/vanilla/discussions/0/'.$Cat->CategoryID.'/'.Gdn_Format::Url($Cat->Name);
          break;
       }      
    }
@@ -41,11 +41,11 @@ if (Gdn::Config('Vanilla.Categories.Use') === TRUE && $this->CategoryID > 0 && $
       if ($Options != '')
          echo '<ul class="PostOptions">' . $Options .'</ul>';
 
-      echo $this->Form->Button((property_exists($this, 'Discussion')) ? 'Save' : 'Post Discussion');
+      echo $this->Form->Button((property_exists($this, 'Discussion')) ? 'Save' : 'Post Discussion', array('class' => 'Button DiscussionButton'));
       if (!property_exists($this, 'Discussion') || !is_object($this->Discussion) || (property_exists($this, 'Draft') && is_object($this->Draft))) {
-         echo $this->Form->Button('Save Draft');
+         echo $this->Form->Button('Save Draft', array('class' => 'Button DraftButton'));
       }
-      echo $this->Form->Button('Preview');
+      echo $this->Form->Button('Preview', array('class' => 'Button PreviewButton'));
       $this->FireEvent('AfterFormButtons');
       echo Anchor(T('Cancel'), $CancelUrl, 'Cancel');
       echo $this->Form->Close();
