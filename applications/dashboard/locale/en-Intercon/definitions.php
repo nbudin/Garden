@@ -1,5 +1,5 @@
 <?php
-require_once("applications/garden/locale/en-CA/definitions.php");
+require_once("applications/dashboard/locale/en-CA/definitions.php");
 
 $Definition["Apply for Membership"] = "Register for Intercon";
 $Definition["Howdy, Stranger!"] = "Members only";

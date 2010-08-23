@@ -2,7 +2,7 @@ set :application, "Garden"
 set :domain, "neiladmin@apocalypse.dreamhost.com"
 set :repository, "git://github.com/nbudin/Garden.git"
 set :revision, "origin/intercon"
-set :deploy_to, "/home/neiladmin/garden"
+set :deploy_to, "/home/neiladmin/forums.sandbox.interactiveliterature.org"
 
 namespace :vlad do
   Rake.clear_tasks('vlad:update_symlinks')
