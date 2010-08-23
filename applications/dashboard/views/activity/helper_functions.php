@@ -1,6 +1,7 @@
 <?php if (!defined('APPLICATION')) exit();
 
 function WriteActivity($Activity, &$Sender, &$Session, $Comment) {
+   $Activity = (object)$Activity;
    // If this was a status update or a wall comment, don't bother with activity strings
    $ActivityType = explode(' ', $Activity->ActivityType); // Make sure you strip out any extra css classes munged in here
    $ActivityType = $ActivityType[0];
@@ -20,7 +21,7 @@ function WriteActivity($Activity, &$Sender, &$Session, $Comment) {
       $RegardingUser = UserBuilder($Activity, 'Regarding');
       $Title = '<div class="Title">'
          .UserAnchor($Author, 'Title Name')
-         .' <span>→</span> '
+         .' <span>&rarr;</span> '
          .UserAnchor($RegardingUser, 'Name')
          .'</div>';
       $Excerpt = Gdn_Format::Display($Excerpt);
@@ -36,7 +37,7 @@ function WriteActivity($Activity, &$Sender, &$Session, $Comment) {
       && ($Session->UserID == $Activity->InsertUserID
          || $Session->CheckPermission('Garden.Activity.Delete'))
       )
-      echo '<div class="OptionButton">'.Anchor(T('Delete'), 'dashboard/activity/delete/'.$Activity->ActivityID.'/'.$Session->TransientKey().'?Return='.urlencode(Gdn_Url::Request()), 'Delete').'</div>';
+      echo '<div class="OptionButton">'.Anchor(T('Delete'), 'dashboard/activity/delete/'.$Activity->ActivityID.'/'.$Session->TransientKey().'?Target='.urlencode($Sender->SelfUrl), 'Delete').'</div>';
 
    if ($PhotoAnchor != '') {
    ?>

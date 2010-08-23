@@ -26,13 +26,13 @@ class DiscussionsController extends VanillaController {
    public $CategoryID;
    
    public function Index($Offset = '0') {
-      if ($this->Head) {
-         $this->AddJsFile('discussions.js');
-         $this->AddJsFile('bookmark.js');
-         $this->AddJsFile('options.js');
-         $this->Head->AddRss('/rss/'.$this->SelfUrl, $this->Head->Title());
-         $this->Head->Title(T('All Discussions'));
-      }
+      list($Offset, $Limit) = OffsetLimit($Offset, Gdn::Config('Vanilla.Discussions.PerPage', 30));
+      $this->CanonicalUrl(Url(ConcatSep('/', 'discussions', PageNumber($Offset, $Limit, TRUE)), TRUE));
+
+		$this->Title(T('All Discussions'));
+      if ($this->Head)
+         $this->Head->AddRss($this->SelfUrl.'/feed.rss', $this->Head->Title());
+
       if (!is_numeric($Offset) || $Offset < 0)
          $Offset = 0;
       
@@ -44,23 +44,14 @@ class DiscussionsController extends VanillaController {
       $this->AddModule($BookmarkedModule);
 
       $this->SetData('Category', FALSE, TRUE);
-      $Limit = Gdn::Config('Vanilla.Discussions.PerPage', 30);
       $DiscussionModel = new DiscussionModel();
       $CountDiscussions = $DiscussionModel->GetCount();
       $this->SetData('CountDiscussions', $CountDiscussions);
-         
-      $TmpLimit = $Limit;
-      $AnnounceData = FALSE;
-      if ($Offset == 0) {
-         $AnnounceData = $DiscussionModel->GetAnnouncements();
-         $TmpLimit = $Limit - $AnnounceData->NumRows();
-         if ($TmpLimit <= 0)
-            $TmpLimit = 1;
-      }
-      $this->SetJson('Loading', $Offset . ' to ' . $TmpLimit);
-      $this->SetData('AnnounceData', $AnnounceData, TRUE);
-      
-      $this->SetData('DiscussionData', $DiscussionModel->Get($Offset, $TmpLimit), TRUE);
+      $this->AnnounceData = $Offset == 0 ? $DiscussionModel->GetAnnouncements() : FALSE;
+		$this->SetData('Announcements', $this->AnnounceData !== FALSE ? $this->AnnounceData : array(), TRUE);
+      $this->DiscussionData = $DiscussionModel->Get($Offset, $Limit);
+      $this->SetData('Discussions', $this->DiscussionData, TRUE);
+      $this->SetJson('Loading', $Offset . ' to ' . $Limit);
 
       // Build a pager.
       $PagerFactory = new Gdn_PagerFactory();
@@ -98,17 +89,17 @@ class DiscussionsController extends VanillaController {
       $this->ShowOptions = TRUE;
       $this->Menu->HighlightRoute('/discussions');
       $this->AddCssFile('vanilla.css');
-      $this->AddJsFile('/js/library/jquery.gardenmorepager.js');
+		$this->AddJsFile('bookmark.js');
+		$this->AddJsFile('discussions.js');
+		$this->AddJsFile('jquery.menu.js');
+		$this->AddJsFile('options.js');
+      $this->AddJsFile('jquery.gardenmorepager.js');
+		$this->FireEvent('AfterInitialize');
    }
    
    public function Bookmarked($Offset = '0') {
       $this->Permission('Garden.SignIn.Allow');
-      $this->AddJsFile('options.js');
-      $this->AddJsFile('bookmark.js');
-      $this->AddJsFile('discussions.js');
-      $this->Title(T('My Bookmarks'));
 
-      // $this->AddToolbar();            
       if (!is_numeric($Offset) || $Offset < 0)
          $Offset = 0;
       
@@ -117,7 +108,9 @@ class DiscussionsController extends VanillaController {
       $Wheres = array('w.Bookmarked' => '1', 'w.UserID' => $Session->UserID);
       $DiscussionModel = new DiscussionModel();
       $this->DiscussionData = $DiscussionModel->Get($Offset, $Limit, $Wheres);
+      $this->SetData('Discussions', $this->DiscussionData);
       $CountDiscussions = $DiscussionModel->GetCount($Wheres);
+      $this->SetData('CountDiscussions', $CountDiscussions);
       $this->Category = FALSE;
       
       // Build a pager
@@ -149,12 +142,6 @@ class DiscussionsController extends VanillaController {
    
    public function Mine($Offset = '0') {
       $this->Permission('Garden.SignIn.Allow');
-      $this->AddJsFile('/js/library/jquery.resizable.js');
-      $this->AddJsFile('/js/library/jquery.ui.packed.js');
-      $this->AddJsFile('bookmark.js');
-      $this->AddJsFile('discussions.js');
-      $this->AddJsFile('options.js');
-      $this->Title(T('My Discussions'));
 
       if (!is_numeric($Offset) || $Offset < 0)
          $Offset = 0;
@@ -163,7 +150,8 @@ class DiscussionsController extends VanillaController {
       $Session = Gdn::Session();
       $Wheres = array('d.InsertUserID' => $Session->UserID);
       $DiscussionModel = new DiscussionModel();
-      $this->SetData('DiscussionData', $DiscussionModel->Get($Offset, $Limit, $Wheres), TRUE);
+      $this->DiscussionData = $DiscussionModel->Get($Offset, $Limit, $Wheres);
+      $this->SetData('Discussions', $this->DiscussionData);
       $CountDiscussions = $this->SetData('CountDiscussions', $DiscussionModel->GetCount($Wheres));
       
       // Build a pager

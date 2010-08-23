@@ -10,7 +10,7 @@ $PluginInfo['GettingStarted'] = array(
    'AuthorUrl' => 'http://vanillaforums.com'
 );
 
-class GettingStartedPlugin implements Gdn_IPlugin {
+class GettingStartedPlugin extends Gdn_Plugin {
 
 /*
    This plugin should:
@@ -68,8 +68,7 @@ class GettingStartedPlugin implements Gdn_IPlugin {
          && Gdn::Config('Plugins.GettingStarted.Profile', '0') == '1'
          && Gdn::Config('Plugins.GettingStarted.Discussion', '0') == '1'
       ) {
-         $PluginManager = Gdn::Factory('PluginManager');
-         $PluginManager->DisablePlugin('GettingStarted');
+         Gdn::PluginManager()->DisablePlugin('GettingStarted');
       }
    }
    
@@ -86,8 +85,7 @@ class GettingStartedPlugin implements Gdn_IPlugin {
    }
    
    public function PluginController_DismissGettingStarted_Create(&$Sender) {
-      $PluginManager = Gdn::Factory('PluginManager');
-      $PluginManager->DisablePlugin('GettingStarted');
+      Gdn::PluginManager()->DisablePlugin('GettingStarted');
       echo 'TRUE';
    }
    

@@ -16,6 +16,11 @@ if (!class_exists('SideMenuModule', FALSE)) {
    class SideMenuModule extends Gdn_Module {
       
       /**
+       * Should the group titles be autolinked to the first anchor in the group? Default TRUE;
+       */
+      public $AutoLinkGroups;
+      
+      /**
        * An array of menu items.
        */
       public $Items;
@@ -47,6 +52,7 @@ if (!class_exists('SideMenuModule', FALSE)) {
    
       public function __construct(&$Sender = '') {
          $this->HtmlId = 'SideMenu';
+         $this->AutoLinkGroups = TRUE;
          $this->ClearGroups();
          parent::__construct($Sender);
       }
@@ -82,6 +88,7 @@ if (!class_exists('SideMenuModule', FALSE)) {
             for ($i = 0; $i < count($this->Items[$Group]); $i++) {
                if ($this->Items[$Group][$i]['Text'] == $Text) {
                   unset($this->Items[$Group][$i]);
+                  array_merge($this->Items[$Group]);
                   break;
                }
             }
@@ -99,7 +106,6 @@ if (!class_exists('SideMenuModule', FALSE)) {
       public function ToString($HighlightRoute = '') {
          if ($HighlightRoute == '')
             $HighlightRoute = $this->_HighlightRoute;
-            
          if ($HighlightRoute == '')
             $HighlightRoute = Gdn_Url::Request();
          
@@ -142,6 +148,8 @@ if (!class_exists('SideMenuModule', FALSE)) {
                $ItemCount = 0;
                $LinkCount = 0;
                $OpenGroup = FALSE;
+               $GroupIsActive = FALSE;
+               $GroupAnchor = '';
                $Group = '';
                foreach ($Links as $Key => $Link) {
                   $CurrentLink = FALSE;
@@ -171,8 +179,13 @@ if (!class_exists('SideMenuModule', FALSE)) {
                      if ($Url !== FALSE) {
                         $Url = str_replace(array('{Username}', '{UserID}', '{Session_TransientKey}'), array(urlencode($Username), $UserID, $Session_TransientKey), $Link['Url']);
                         if (substr($Url, 0, 5) != 'http:') {
+                           if ($GroupAnchor == '' && $this->AutoLinkGroups)
+                              $GroupAnchor = $Url;
+                              
                            $Url = Url($Url);
                            $CurrentLink = $Url == Url($HighlightRoute);
+                           if ($CurrentLink && !$GroupIsActive) 
+                              $GroupIsActive = TRUE;
                         }
                         
                         $CssClass = ArrayValue('class', $Attributes, '');
@@ -181,15 +194,27 @@ if (!class_exists('SideMenuModule', FALSE)) {
                            
                         $Group .= '<li'.Attribute($Attributes).'><a href="'.$Url.'">'.$Text.'</a>';
                         ++$LinkCount;
-                     } else {
-                        if ($Text != '')
-                           $Group .= '<h4>'.$Text.'</h4>';
+                     }  else {
+                        $GroupAttributes = $Attributes;
+                        $GroupName = $Text;
                      }
                      ++$ItemCount;
                   }
                }
-               if ($OpenGroup === TRUE)
+               if ($OpenGroup === TRUE) {
                   $Group .= "</li>\r\n</ul>\r\n";
+                  $GroupAttributes['class'] = 'Box Group '.GetValue('class', $GroupAttributes, '');
+                  if ($GroupIsActive)
+                     $GroupAttributes['class'] .= ' Active';
+                     
+                  if ($GroupName != '') {
+                     if ($LinkCount == 1)
+                        $Group = '';
+                        
+                     $GroupUrl = Url($GroupAnchor);
+                     $Group = Wrap(Wrap(($GroupAnchor == '' ? $GroupName : "<a href=\"$GroupUrl\">$GroupName</a>" /*Anchor($GroupName, $GroupAnchor)*/), 'h4').$Group, 'div', $GroupAttributes);
+                  }
+               }
 
 
                if ($Group != '' && $LinkCount > 0) {
@@ -198,7 +223,7 @@ if (!class_exists('SideMenuModule', FALSE)) {
 
             }
             if ($Menu != '')
-               $Menu = '<div'.($this->HtmlId == '' ? '' : ' id="'.$this->HtmlId.'"').' class="Box'.($this->CssClass != '' ? ' '.$this->CssClass : '').'">'.$Menu.'</div>';
+               $Menu = '<div'.($this->HtmlId == '' ? '' : ' id="'.$this->HtmlId.'"').' class="'.($this->CssClass != '' ? $this->CssClass : '').'">'.$Menu.'</div>';
          }
          return $Menu;
       }

@@ -12,19 +12,26 @@ class Gdn {
 
    /// CONSTANTS ///
    const AliasAuthenticator = 'Authenticator';
+   const AliasCache = 'Cache';
    const AliasConfig = 'Config';
    const AliasDatabase = 'Database';
    const AliasDatabaseStructure = 'DatabaseStructure';
    const AliasDispatcher = 'Dispatcher';
    const AliasLocale = 'Locale';
    const AliasPermissionModel = 'PermissionModel';
+   const AliasRequest = 'Request';
+   const AliasRouter = 'Router';
    const AliasSession = 'Session';
+   const AliasSlice = 'Slice';
    const AliasSqlDriver = 'SqlDriver';
    const AliasUserModel = 'UserModel';
+
+   const AliasPluginManager = 'PluginManager';
 
    const FactoryInstance = 'Instance';
    const FactoryPrototype = 'Prototype';
    const FactorySingleton = 'Singleton';
+   const FactoryRealSingleton = 'RealSingleton';
    
    /// PROPERTIES ///
    
@@ -37,14 +44,28 @@ class Gdn {
    protected static $_FactoryOverwrite = TRUE;
    
    protected static $_Locale = NULL;
+
+   protected static $_Request = NULL;
+
+   protected static $_PluginManager = NULL;
    
    protected static $_Session = NULL;
    
    /// METHODS ///
-   
+
+   /** @return Gdn_Auth */
    public static function Authenticator() {
       $Result = self::Factory(self::AliasAuthenticator);
       return $Result;
+   }
+   
+   /**
+    * Get the cache object
+    *
+    * @return Gdn_Cache
+    */
+   public static function Cache() {
+      return self::Factory(self::AliasCache);
    }
    
    /**
@@ -62,7 +83,11 @@ class Gdn {
          
       return $Result;
    }
-   
+
+   /** Gets the global dispatcher object.
+    *
+    * @return Gdn_Dispatcher
+    */
    public static function Dispatcher() {
       $Result = self::Factory(self::AliasDispatcher);
       return $Result;
@@ -88,6 +113,7 @@ class Gdn {
          return self::$_Factory;
       
       // Get the arguments to pass to the factory.
+      //$Args = array($Arg1, $Arg2, $Arg3, $Arg4, $Arg5);
       $Args = func_get_args();
       array_shift($Args);
       return self::$_Factory->Factory($Alias, $Args);
@@ -125,6 +151,12 @@ class Gdn {
       switch($Alias) {
          case self::AliasConfig:
             self::$_Config = self::Factory($Alias);
+            break;
+         case self::AliasRequest:
+            self::$_Request = self::Factory($Alias);
+            break;
+         case self::AliasPluginManager:
+            self::$_PluginManager = self::Factory($Alias);
             break;
          case self::AliasSession:
             self::$_Session = NULL;
@@ -248,12 +280,47 @@ class Gdn {
    }
    
    /**
-    * Geth the permission model for the application.
+    * Get the permission model for the application.
     *
     * @return PermissionModel
     */
    public static function PermissionModel() {
       return self::Factory(self::AliasPermissionModel);
+   }
+
+   /**
+    * Get the plugin manager for the application.
+    *
+    * @return Gdn_PluginManager
+    */
+   public static function PluginManager() {
+      return self::$_PluginManager; //self::Factory(self::AliasPluginManager);
+   }
+   
+   /**
+    * Get or set the current request object.
+    * @param Gdn_Rewuest $NewRequest The new request or null to just get the request.
+    * @return Gdn_Request
+    */
+   public static function Request($NewRequest = NULL) {
+      $Request = self::$_Request; //self::Factory(self::AliasRequest);
+      if (!is_null($NewRequest)) {
+			if(is_string($NewRequest))
+				$Request->WithURI($NewRequest);
+			elseif(is_object($NewRequest))
+				$Request->FromImport($NewRequest);
+		}
+      
+      return $Request;
+   }
+   
+   /**
+    * Get the router object
+    *
+    * @return Gdn_Router
+    */
+   public static function Router() {
+      return self::Factory(self::AliasRouter);
    }
    
    /**
@@ -265,6 +332,11 @@ class Gdn {
       if(is_null(self::$_Session))
          self::$_Session = self::Factory(self::AliasSession);
       return self::$_Session;
+   }
+   
+   public static function Slice($Slice) {
+      $Result = self::Factory(self::AliasSlice);
+      return $Result->Execute($Slice);
    }
    
    /**

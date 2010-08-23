@@ -1,5 +1,8 @@
 <?php if (!defined('APPLICATION')) exit();
 $Session = Gdn::Session();
+if (!function_exists('WriteComment'))
+   include($this->FetchViewLocation('helper_functions', 'discussion'));
+
 if ($Session->IsValid()) {
    // Bookmark link
    echo Anchor(
@@ -14,16 +17,22 @@ if ($Session->IsValid()) {
    <ul>
       <li><?php
          if (Gdn::Config('Vanilla.Categories.Use') === TRUE) {
-            echo Anchor($this->Discussion->Category, 'categories/'.$this->Discussion->CategoryID.'/'.Gdn_Format::Url($this->Discussion->Category));
+            echo Anchor($this->Discussion->Category, 'categories/'.$this->Discussion->CategoryUrlCode);
          } else {
             echo Anchor(T('All Discussions'), 'discussions');
          }
       ?></li>
    </ul>
-   <div class="SubTab"><?php echo Gdn_Format::Text($this->Discussion->Name); ?></div>
+   <div class="SubTab"><?php
+      $DiscussionName = Gdn_Format::Text($this->Discussion->Name);
+      if ($DiscussionName == '')
+         $DiscussionName = T('Blank Discussion Topic');
+         
+      echo $DiscussionName;
+   ?></div>
 </div>
 <?php
-   echo $this->Pager->ToString('less');
+   //echo $this->Pager->ToString('less');
    echo $this->RenderAsset('DiscussionBefore');
 ?>
 <ul class="MessageList Discussion">
@@ -46,7 +55,7 @@ if ($this->Discussion->Closed == '1') {
    ?>
    <div class="Foot Closed">
       <div class="Note Closed"><?php echo T('This discussion has been closed.'); ?></div>
-      <?php echo Anchor(T('← All Discussions'), 'discussions', 'TabLink'); ?>
+      <?php echo Anchor(T('&larr; All Discussions'), 'discussions', 'TabLink'); ?>
    </div>
 <?php
 } else if ($Session->IsValid()) { 
@@ -55,7 +64,7 @@ if ($this->Discussion->Closed == '1') {
 ?>
    <div class="Foot">
       <?php
-      echo Anchor(T('Add a Comment'), Gdn::Authenticator()->SignInUrl($this->SelfUrl), 'TabLink'.(Gdn::Config('Garden.SignIn.Popup') ? ' SignInPopup' : ''));
+      echo Anchor(T('Add a Comment'), Gdn::Authenticator()->SignInUrl($this->SelfUrl), 'TabLink'.(C('Garden.SignIn.Popup') ? ' SignInPopup' : ''));
       ?> 
    </div>
    <?php 

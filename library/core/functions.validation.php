@@ -101,6 +101,8 @@ if (!function_exists('ValidateOldPassword')) {
 
 if (!function_exists('ValidateEmail')) {
    function ValidateEmail($Value, $Field = '') {
+      if($Value == '')
+         return TRUE; // required picks up this error
       return ValidateRegex(
          $Value,
          '/^([\w\d+_-][\w\d+_.-]{0,63})@(([\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3})|([\w\d][\w\d.-]{0,244}\.[\w]{2,10}))$/'
@@ -111,7 +113,7 @@ if (!function_exists('ValidateUsername')) {
    function ValidateUsername($Value, $Field = '') {
       return ValidateRegex(
          $Value,
-         '/^([\d\w_]{3,20})$/si'
+         '/^([\d\w_]{3,20})?$/si'
       );
    }
 }
@@ -119,7 +121,7 @@ if (!function_exists('ValidateUrlString')) {
    function ValidateUrlString($Value, $Field = '') {
       return ValidateRegex(
          $Value,
-         '/^([\d\w_\-]+)$/si'
+         '/^([\d\w_\-]+)?$/si'
       );
    }
 }
@@ -169,7 +171,10 @@ if (!function_exists('ValidateMinimumAge')) {
 }
 
 if (!function_exists('ValidateInteger')) {
-   function ValidateInteger($Value, $Field) {
+   function ValidateInteger($Value, $Field = NULL) {
+      if (!$Value || (is_string($Value) && !trim($Value)))
+         return TRUE;
+
       $Integer = intval($Value);
       $String = strval($Integer);
       return $String == $Value ? TRUE : FALSE;

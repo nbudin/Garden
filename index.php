@@ -1,4 +1,6 @@
 <?php
+define('APPLICATION', 'Vanilla');
+define('APPLICATION_VERSION', '2.0.3');
 /*
 Copyright 2008, 2009 Vanilla Forums Inc.
 This file is part of Garden.
@@ -9,25 +11,21 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
 */
 
 // Report and track all errors.
-error_reporting(E_ALL);
+if(defined('DEBUG'))
+   error_reporting(E_ALL);
+else
+   error_reporting(E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR);
 ini_set('display_errors', 'on');
 ini_set('track_errors', 1);
 
 ob_start();
 
 // 1. Define the constants we need to get going.
-define('APPLICATION', 'Garden');
-define('APPLICATION_VERSION', '1.0');
-
-define('DS', DIRECTORY_SEPARATOR);
+define('DS', '/');
 define('PATH_ROOT', dirname(__FILE__));
 
 // 2. Include the header.
 require_once(PATH_ROOT.DS.'bootstrap.php');
-
-// 3. Start the application.
-if (strpos(Gdn_Url::Request(), 'setup') === FALSE)
-   Gdn::Session()->Start(Gdn::Authenticator());
 
 $Dispatcher = Gdn::Dispatcher();
 
@@ -35,7 +33,7 @@ $EnabledApplications = Gdn::Config('EnabledApplications');
 $Dispatcher->EnabledApplicationFolders($EnabledApplications);
 
 $Dispatcher->PassProperty('EnabledApplications', $EnabledApplications);
-$Dispatcher->Routes = Gdn::Config('Routes');
 
 // Process the request.
 $Dispatcher->Dispatch();
+$Dispatcher->Cleanup();

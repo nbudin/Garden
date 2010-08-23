@@ -11,15 +11,22 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
 /**
  * Garden Settings Controller
  */
-class SettingsController extends GardenController {
+class SettingsController extends DashboardController {
    
    public $Uses = array('Form', 'Database');
    public $ModuleSortContainer = 'Dashboard';
+
+   /**
+    *
+    * @var Gdn_Form
+    */
+   public $Form;
    
    /**
     * Application management screen.
     */
    public function Applications($Filter = '', $TransientKey = '') {
+      $this->AddJsFile('addons.js');
       $Session = Gdn::Session();
       $ApplicationName = $Session->ValidateTransientKey($TransientKey) ? $Filter : '';
       if (!in_array($Filter, array('enabled', 'disabled')))
@@ -27,7 +34,7 @@ class SettingsController extends GardenController {
          
       $this->Filter = $Filter;
       $this->Permission('Garden.Applications.Manage');
-      $this->AddSideMenu('garden/settings/applications');
+      $this->AddSideMenu('dashboard/settings/applications');
 
       $this->AddJsFile('applications.js');
       $this->Title(T('Applications'));
@@ -40,11 +47,11 @@ class SettingsController extends GardenController {
       
       // Loop through all of the available visible apps and mark them if they have an update available
       // Retrieve the list of apps that require updates from the config file
-      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -63,9 +70,11 @@ class SettingsController extends GardenController {
       }
       
       if ($ApplicationName != '') {
+         $this->EventArguments['ApplicationName'] = $ApplicationName;
          if (array_key_exists($ApplicationName, $this->EnabledApplications) === TRUE) {
             try {
                $ApplicationManager->DisableApplication($ApplicationName);
+               $this->FireEvent('AfterDisableApplication');
             } catch (Exception $e) {
                $this->Form->AddError(strip_tags($e->getMessage()));
             }
@@ -79,9 +88,10 @@ class SettingsController extends GardenController {
                $Validation = new Gdn_Validation();
                $ApplicationManager->RegisterPermissions($ApplicationName, $Validation);
                $ApplicationManager->EnableApplication($ApplicationName, $Validation);
-               if ($ApplicationManager->ApplicationHasSetup($ApplicationName))
-                  $ApplicationManager->ApplicationSetup($ApplicationName, $this->ControllerName, $Validation);
                $this->Form->SetValidationResults($Validation->Results());
+               
+               $this->EventArguments['Validation'] = $Validation;
+               $this->FireEvent('AfterEnableApplication');
             }
             
          }
@@ -92,27 +102,81 @@ class SettingsController extends GardenController {
    }
    
    /**
-    * Garden management screen.
+    * Banner management screen.
     */
-   public function Configure() {
+   public function Banner() {
       $this->Permission('Garden.Settings.Manage');
-      $this->AddSideMenu('garden/settings/configure');
+      $this->AddSideMenu('dashboard/settings/banner');
+      $this->Title(T('Banner'));
+      
+      $Validation = new Gdn_Validation();
+      $ConfigurationModel = new Gdn_ConfigurationModel($Validation);
+      $ConfigurationModel->SetField(array('Garden.Title'));
+      
+      // Set the model on the form.
+      $this->Form->SetModel($ConfigurationModel);
+      
+      // If seeing the form for the first time...
+      if ($this->Form->AuthenticatedPostBack() === FALSE) {
+         // Apply the config settings to the form.
+         $this->Form->SetData($ConfigurationModel->Data);
+      } else {
+         // Define some validation rules for the fields being saved
+         $ConfigurationModel->Validation->ApplyRule('Garden.Title', 'Required');
+         
+         if ($this->Form->Save() !== FALSE) {
+            $Upload = new Gdn_Upload();
+            try {
+               // Validate the upload
+               $TmpImage = $Upload->ValidateUpload('Logo', FALSE);
+               if ($TmpImage) {
+                  // Generate the target image name
+                  $TargetImage = $Upload->GenerateTargetName(PATH_ROOT . DS . 'uploads');
+                  $ImageBaseName = pathinfo($TargetImage, PATHINFO_BASENAME);
+                  
+                  // Delete any previously uploaded images
+                  @unlink(PATH_ROOT . DS . C('Garden.Logo', ''));
+                  
+                  // Save the uploaded image
+                  $Upload->SaveAs(
+                     $TmpImage,
+                     PATH_ROOT . DS . 'uploads' . DS . $ImageBaseName
+                  );
+               }
+            } catch (Exception $ex) {
+               $this->Form->AddError($ex->getMessage());
+            }
+            // If there were no errors, save the path to the logo in the config
+            if ($this->Form->ErrorCount() == 0 && $Upload->GetUploadedFileName() != '')
+               SaveToConfig('Garden.Logo', 'uploads' . DS . $ImageBaseName);
+            
+            $this->StatusMessage = T("Your settings have been saved.");
+         }
+      }
+      
+      $this->Render();      
+   }      
+   
+   /**
+    * Outgoing Email management screen.
+    */
+   public function Email() {
+      $this->Permission('Garden.Settings.Manage');
+      $this->AddSideMenu('dashboard/settings/email');
       $this->AddJsFile('email.js');
-      $this->Title(T('General Settings'));
+      $this->Title(T('Outgoing Email'));
       
       $Validation = new Gdn_Validation();
       $ConfigurationModel = new Gdn_ConfigurationModel($Validation);
       $ConfigurationModel->SetField(array(
-         'Garden.Locale',
-         'Garden.Title',
-         'Garden.RewriteUrls',
          'Garden.Email.SupportName',
          'Garden.Email.SupportAddress',
          'Garden.Email.UseSmtp',
          'Garden.Email.SmtpHost',
          'Garden.Email.SmtpUser',
          'Garden.Email.SmtpPassword',
-         'Garden.Email.SmtpPort'
+         'Garden.Email.SmtpPort',
+         'Garden.Email.SmtpSecurity'
       ));
       
       // Set the model on the form.
@@ -123,43 +187,34 @@ class SettingsController extends GardenController {
       $AvailableLocales = $Locale->GetAvailableLocaleSources();
       $this->LocaleData = ArrayCombine($AvailableLocales, $AvailableLocales);
       
-      // Check to see if mod_rewrit is enabled.
-      if(function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_modules())) {
-         $this->SetData('HasModRewrite', TRUE);
-      } else {
-         $this->SetData('HasModRewrite', FALSE);
-      }
-      
       // If seeing the form for the first time...
       if ($this->Form->AuthenticatedPostBack() === FALSE) {
          // Apply the config settings to the form.
          $this->Form->SetData($ConfigurationModel->Data);
       } else {
          // Define some validation rules for the fields being saved
-         $ConfigurationModel->Validation->ApplyRule('Garden.Locale', 'Required');
-         $ConfigurationModel->Validation->ApplyRule('Garden.Title', 'Required');
-         $ConfigurationModel->Validation->ApplyRule('Garden.RewriteUrls', 'Boolean');
          $ConfigurationModel->Validation->ApplyRule('Garden.Email.SupportName', 'Required');
          $ConfigurationModel->Validation->ApplyRule('Garden.Email.SupportAddress', 'Required');
          $ConfigurationModel->Validation->ApplyRule('Garden.Email.SupportAddress', 'Email');
          
          // If changing locale, redefine locale sources:
+         /*
          $NewLocale = $this->Form->GetFormValue('Garden.Locale', FALSE);
          if ($NewLocale !== FALSE && Gdn::Config('Garden.Locale') != $NewLocale) {
             $ApplicationManager = new Gdn_ApplicationManager();
-            $PluginManager = Gdn::Factory('PluginManager');
             $Locale = Gdn::Locale();
-            $Locale->Set($NewLocale, $ApplicationManager->EnabledApplicationFolders(), $PluginManager->EnabledPluginFolders(), TRUE);
+            $Locale->Set($NewLocale, $ApplicationManager->EnabledApplicationFolders(), Gdn::PluginManager()->EnabledPluginFolders(), TRUE);
          }
+         */
          
-         if ($this->Form->Save() !== FALSE) {
+         if ($this->Form->Save() !== FALSE)
             $this->StatusMessage = T("Your settings have been saved.");
-         }
+
       }
       
       $this->Render();      
    }      
-   
+
    /**
     * Garden settings dashboard.
     */
@@ -181,8 +236,8 @@ class SettingsController extends GardenController {
       $this->RequiredAdminPermissions[] = 'Garden.Users.Delete';
       $this->RequiredAdminPermissions[] = 'Garden.Users.Approve';
       $this->FireEvent('DefineAdminPermissions');
-      $this->Permission($this->RequiredAdminPermissions, '', FALSE);
-      $this->AddSideMenu('garden/settings');
+      $this->Permission($this->RequiredAdminPermissions, FALSE);
+      $this->AddSideMenu('dashboard/settings');
 
       $UserModel = Gdn::UserModel();
       
@@ -193,9 +248,9 @@ class SettingsController extends GardenController {
       $this->AddDefinition('CountUsers', $CountUsers);
       $this->BuzzData[T('Users')] = number_format($CountUsers);
       // Get the number of new users in the last day
-      $this->BuzzData[T('New users in the last day')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Format::ToDateTime(strtotime('-1 day')))));
+      $this->BuzzData[T('New users in the last day')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Gdn_Format::ToDateTime(strtotime('-1 day')))));
       // Get the number of new users in the last week
-      $this->BuzzData[T('New users in the last week')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Format::ToDateTime(strtotime('-1 week')))));
+      $this->BuzzData[T('New users in the last week')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Gdn_Format::ToDateTime(strtotime('-1 week')))));
       
       // Get recently active users
       $this->ActiveUserData = $UserModel->GetActiveUsers(5);
@@ -228,8 +283,7 @@ class SettingsController extends GardenController {
          $UpdateData = array();
          
          // Grab all of the plugins & versions
-         $PluginManager = Gdn::Factory('PluginManager');
-         $Plugins = $PluginManager->AvailablePlugins();
+         $Plugins = Gdn::PluginManager()->AvailablePlugins();
          foreach ($Plugins as $Plugin => $Info) {
             $Name = ArrayValue('Name', $Info, $Plugin);
             $Version = ArrayValue('Version', $Info, '');
@@ -271,17 +325,18 @@ class SettingsController extends GardenController {
 
          // Dump the entire set of information into the definition list (jQuery
          // will pick it up and ping the VanillaForums.org server with this info).
-         $this->AddDefinition('UpdateChecks', Format::Serialize($UpdateData));
+         $this->AddDefinition('UpdateChecks', Gdn_Format::Serialize($UpdateData));
       }
    }
    
    public function Initialize() {
       parent::Initialize();
       if ($this->Menu)
-         $this->Menu->HighlightRoute('/garden/settings');
+         $this->Menu->HighlightRoute('/dashboard/settings');
    }
    
    public function Plugins($Filter = '', $TransientKey = '') {
+      $this->AddJsFile('addons.js');
       $this->Title(T('Plugins'));
          
       $Session = Gdn::Session();
@@ -291,20 +346,19 @@ class SettingsController extends GardenController {
          
       $this->Filter = $Filter;
       $this->Permission('Garden.Plugins.Manage');
-      $this->AddSideMenu('garden/settings/plugins');
+      $this->AddSideMenu('dashboard/settings/plugins');
       
       // Retrieve all available plugins from the plugins directory
-      $PluginManager = Gdn::Factory('PluginManager');
-      $this->EnabledPlugins = $PluginManager->EnabledPlugins;
-      $this->AvailablePlugins = $PluginManager->AvailablePlugins();
+      $this->EnabledPlugins = Gdn::PluginManager()->EnabledPlugins;
+      $this->AvailablePlugins = Gdn::PluginManager()->AvailablePlugins();
       
       // Loop through all of the available plugins and mark them if they have an update available
       // Retrieve the list of plugins that require updates from the config file
-      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -324,12 +378,17 @@ class SettingsController extends GardenController {
       
       if ($PluginName != '') {
          try {
+            $this->EventArguments['PluginName'] = $PluginName;
             if (array_key_exists($PluginName, $this->EnabledPlugins) === TRUE) {
-               $PluginManager->DisablePlugin($PluginName);
+               Gdn::PluginManager()->DisablePlugin($PluginName);
+               $this->FireEvent('AfterDisablePlugin');
             } else {
                $Validation = new Gdn_Validation();
-               if (!$PluginManager->EnablePlugin($PluginName, $Validation))
+               if (!Gdn::PluginManager()->EnablePlugin($PluginName, $Validation))
                   $this->Form->SetValidationResults($Validation->Results());
+               
+               $this->EventArguments['Validation'] = $Validation;
+               $this->FireEvent('AfterEnablePlugin');
             }
          } catch (Exception $e) {
             $this->Form->AddError(strip_tags($e->getMessage()));
@@ -345,7 +404,9 @@ class SettingsController extends GardenController {
     */
    public function Registration($RedirectUrl = '') {
       $this->Permission('Garden.Registration.Manage');
-      $this->AddSideMenu('garden/settings/registration');
+		if(!C('Garden.Registration.Manage', TRUE))
+			return Gdn::Dispatcher()->Dispatch('Default404');
+      $this->AddSideMenu('dashboard/settings/registration');
       
       $this->AddJsFile('registration.js');
       $this->Title(T('Registration'));
@@ -353,19 +414,25 @@ class SettingsController extends GardenController {
       // Create a model to save configuration settings
       $Validation = new Gdn_Validation();
       $ConfigurationModel = new Gdn_ConfigurationModel($Validation);
-      $ConfigurationModel->SetField(array('Garden.Registration.Method', 'Garden.Registration.DefaultRoles', 'Garden.Registration.CaptchaPrivateKey', 'Garden.Registration.CaptchaPublicKey', 'Garden.Registration.InviteExpiration'));
+      $ConfigurationModel->SetField(array(
+         'Garden.Registration.Method' => 'Captcha',
+         // 'Garden.Registration.DefaultRoles',
+         'Garden.Registration.CaptchaPrivateKey',
+         'Garden.Registration.CaptchaPublicKey',
+         'Garden.Registration.InviteExpiration'
+      ));
       
       // Set the model on the forms.
       $this->Form->SetModel($ConfigurationModel);
       
       // Load roles with sign-in permission
-      $RoleModel = new Gdn_RoleModel();
+      $RoleModel = new RoleModel();
       $this->RoleData = $RoleModel->GetByPermission('Garden.SignIn.Allow');
       
       // Get the currently selected default roles
-      $this->ExistingRoleData = Gdn::Config('Garden.Registration.DefaultRoles');
-      if (is_array($this->ExistingRoleData) === FALSE)
-         $this->ExistingRoleData = array();
+      // $this->ExistingRoleData = Gdn::Config('Garden.Registration.DefaultRoles');
+      // if (is_array($this->ExistingRoleData) === FALSE)
+      //    $this->ExistingRoleData = array();
          
       // Get currently selected InvitationOptions
       $this->ExistingRoleInvitations = Gdn::Config('Garden.Registration.InviteRoles');
@@ -377,11 +444,11 @@ class SettingsController extends GardenController {
       
       // Registration methods.
       $this->RegistrationMethods = array(
-         'Closed' => "Registration is closed.",
-         'Basic' => "The applicants are granted access immediately.",
-         'Captcha' => "The applicants must copy the text from a captcha image, proving that they are not a robot.",
-         'Approval' => "The applicants must be approved by an administrator before they are granted access.",
-         'Invitation' => "Existing members send out invitations to new members. Any person who receives an invitation is granted access immediately. Invitations are permission-based (defined below). Monthly invitations are NOT cumulative."
+         // 'Closed' => "Registration is closed.",
+         // 'Basic' => "The applicants are granted access immediately.",
+         'Captcha' => "New users fill out a simple form and are granted access immediately.",
+         'Approval' => "New users are reviewed and approved by an administrator (that's you!).",
+         'Invitation' => "Existing members send invitations to new members."
       );
 
       // Options for how many invitations a role can send out per month.
@@ -406,8 +473,8 @@ class SettingsController extends GardenController {
       } else {   
          // Define some validation rules for the fields being saved
          $ConfigurationModel->Validation->ApplyRule('Garden.Registration.Method', 'Required');   
-         if($this->Form->GetValue('Garden.Registration.Method') != 'Closed')
-            $ConfigurationModel->Validation->ApplyRule('Garden.Registration.DefaultRoles', 'RequiredArray');
+         // if($this->Form->GetValue('Garden.Registration.Method') != 'Closed')
+         //    $ConfigurationModel->Validation->ApplyRule('Garden.Registration.DefaultRoles', 'RequiredArray');
          
          // Define the Garden.Registration.RoleInvitations setting based on the postback values
          $InvitationRoleIDs = $this->Form->GetValue('InvitationRoleID');
@@ -425,33 +492,111 @@ class SettingsController extends GardenController {
       
       $this->Render();
    }
+   
+   /**
+    * Test and addon to see if there are any fatal errors during install.
+    */
+   public function TestAddon($AddonType = '', $AddonName = '', $TransientKey = '') {
+      if (!in_array($AddonType, array('Plugin', 'Application', 'Theme')))
+         $AddonType = 'Plugin';
+         
+      $Session = Gdn::Session();
+      $AddonName = $Session->ValidateTransientKey($TransientKey) ? $AddonName : '';
+      $AddonManagerName = $AddonType.'Manager';
+      $TestMethod = 'Test'.$AddonType;
+      $AddonManager = Gdn::Factory($AddonManagerName);
+      if ($AddonName != '') {
+         $Validation = new Gdn_Validation();
+         $AddonManager->$TestMethod($AddonName, $Validation);
+      }
+
+      echo 'Success';
+   }
+
+   public function ThemeOptions() {
+      $this->Permission('Garden.Themes.Manage');
+
+      try {
+
+         $this->AddJsFile('addons.js');
+         $this->AddSideMenu('dashboard/settings/themeoptions');
+
+         $ThemeManager = new Gdn_ThemeManager();
+         $this->SetData('ThemeInfo', $ThemeManager->EnabledThemeInfo());
+
+         if ($this->Form->IsPostBack()) {
+            // Save the styles to the config.
+            $StyleKey = $this->Form->GetFormValue('StyleKey');
+            SaveToConfig(array(
+               'Garden.ThemeOptions.Styles.Key' => $StyleKey,
+               'Garden.ThemeOptions.Styles.Value' => $this->Data("ThemeInfo.Options.Styles.$StyleKey.Basename")));
+            // Save the text to the locale.
+            $Translations = array();
+            foreach ($this->Data('ThemeInfo.Options.Text', array()) as $Key => $Default) {
+               $Value = $this->Form->GetFormValue($this->Form->EscapeString('Text_'.$Key));
+               $Translations['Theme_'.$Key] = $Value;
+               //$this->Form->SetFormValue('Text_'.$Key, $Value);
+            }
+            if (count($Translations) > 0) {
+               try {
+                  Gdn::Locale()->SaveTranslations($Translations);
+                  Gdn::Locale()->Refresh();
+               } catch (Exception $Ex) {
+                  $this->Form->AddError($Ex);
+               }
+            }
+
+            $this->StatusMessage = T("Your changes have been saved.");
+         }
+
+         $this->SetData('ThemeOptions', C('Garden.ThemeOptions'));
+         $StyleKey = $this->Data('ThemeOptions.Styles.Key');
+
+         if (!$this->Form->IsPostBack()) {
+            foreach ($this->Data('ThemeInfo.Options.Text', array()) as $Key => $Options) {
+               $Default = GetValue('Default', $Options, '');
+               $Value = T('Theme_'.$Key, '#DEFAULT#');
+               if ($Value === '#DEFAULT#')
+                  $Value = $Default;
+
+               $this->Form->SetFormValue($this->Form->EscapeString('Text_'.$Key), $Value);
+            }
+         }
+
+         $this->SetData('ThemeFolder', $ThemeManager->EnabledTheme());
+         $this->Title(T('Theme Options'));
+         $this->Form->AddHidden('StyleKey', $StyleKey);
+      } catch (Exception $Ex) {
+         $this->Form->AddError($Ex);
+      }
+
+      $this->Render();
+   }
 
    /**
     * Theme management screen.
     */
    public function Themes($ThemeFolder = '', $TransientKey = '') {
-      $this->Title(T('Themes'));
+      $this->AddJsFile('addons.js');
+      $this->SetData('Title', T('Themes'));
          
       $this->Permission('Garden.Themes.Manage');
-      $this->AddSideMenu('garden/settings/themes');
+      $this->AddSideMenu('dashboard/settings/themes');
 
       $Session = Gdn::Session();
       $ThemeManager = new Gdn_ThemeManager();
-      $this->AvailableThemes = $ThemeManager->AvailableThemes();
-      $this->EnabledThemeFolder = $ThemeManager->EnabledTheme();
-      $this->EnabledTheme = $ThemeManager->EnabledThemeInfo();
-      $Name = array_keys($this->EnabledTheme);
-      $Name = ArrayValue(0, $Name, 'undefined');
-      $this->EnabledTheme = ArrayValue($Name, $this->EnabledTheme);
-      $this->EnabledThemeName = ArrayValue('Name', $this->EnabledTheme, $Name);
+      $this->SetData('AvailableThemes', $ThemeManager->AvailableThemes());
+      $this->SetData('EnabledThemeFolder', $ThemeManager->EnabledTheme());
+      $this->SetData('EnabledTheme', $ThemeManager->EnabledThemeInfo());
+      $this->SetData('EnabledThemeName', $this->Data('EnabledTheme.Name', $this->Data('EnabledTheme.Folder')));
       
       // Loop through all of the available themes and mark them if they have an update available
       // Retrieve the list of themes that require updates from the config file
-      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -471,14 +616,17 @@ class SettingsController extends GardenController {
       
       if ($Session->ValidateTransientKey($TransientKey) && $ThemeFolder != '') {
          try {
-            foreach ($this->AvailableThemes as $ThemeName => $ThemeInfo) {
+            foreach ($this->Data('AvailableThemes') as $ThemeName => $ThemeInfo) {
                if ($ThemeInfo['Folder'] == $ThemeFolder) {
-                  $Session->SetPreference('PreviewTheme', ''); // Clear out the preview
+                  $Session->SetPreference(array('PreviewThemeName' => '', 'PreviewThemeFolder' => '')); // Clear out the preview
                   $ThemeManager->EnableTheme($ThemeName);
+                  $this->EventArguments['ThemeName'] = $ThemeName;
+                  $this->EventArguments['ThemeInfo'] = $ThemeInfo;
+                  $this->FireEvent('AfterEnableTheme');
                }
             }
-         } catch (Exception $e) {
-            $this->Form->AddError(strip_tags($e->getMessage()));
+         } catch (Exception $Ex) {
+            $this->Form->AddError($Ex);
          }
          if ($this->Form->ErrorCount() == 0)
             Redirect('/settings/themes');
@@ -505,9 +653,8 @@ class SettingsController extends GardenController {
                $PreviewThemeFolder = $ThemeInfo['Folder'];
          }
       }
-
-      $Session = Gdn::Session();
-      $Session->SetPreference(array('PreviewThemeName' => $PreviewThemeName, 'PreviewThemeFolder' => $PreviewThemeFolder));
+      
+      Gdn::Session()->SetPreference(array('PreviewThemeName' => $PreviewThemeName, 'PreviewThemeFolder' => $PreviewThemeFolder));
       Redirect('/');
    }
    
@@ -518,20 +665,24 @@ class SettingsController extends GardenController {
    }
    
    public function RemoveAddon($Type, $Name, $TransientKey = '') {
+      $RequiredPermission = 'Undefined';
       switch ($Type) {
          case SettingsModule::TYPE_APPLICATION:
             $Manager = Gdn::Factory('ApplicationManager');
             $Enabled = 'EnabledApplications';
             $Remove  = 'RemoveApplication';
+            $RequiredPermission = 'Garden.Applications.Manage';
          break;
          case SettingsModule::TYPE_PLUGIN:
             $Manager = Gdn::Factory('PluginManager');
             $Enabled = 'EnabledPlugins';
             $Remove  = 'RemovePlugin';
+            $RequiredPermission = 'Garden.Plugins.Manage';
          break;
       }
       
-      if (Gdn::Session()->ValidateTransientKey($TransientKey)) {
+      $Session = Gdn::Session();
+      if ($Session->ValidateTransientKey($TransientKey) && $Session->CheckPermission($RequiredPermission)) {
          try {
             if (array_key_exists($Name, $Manager->$Enabled) === FALSE) {
                $Manager->$Remove($Name);
@@ -542,5 +693,16 @@ class SettingsController extends GardenController {
       }
       if ($this->Form->ErrorCount() == 0)
          Redirect('/settings/plugins');
+   }
+   
+   public function RemoveLogo($TransientKey = '') {
+      $Session = Gdn::Session();
+      if ($Session->ValidateTransientKey($TransientKey) && $Session->CheckPermission('Garden.Themes.Manage')) {
+         $Logo = C('Garden.Logo', '');
+         RemoveFromConfig('Garden.Logo');
+         @unlink(PATH_ROOT . DS . $Logo);
+      }
+
+      Redirect('/settings/banner');
    }
 }

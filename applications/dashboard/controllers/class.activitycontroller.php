@@ -14,17 +14,15 @@ class ActivityController extends Gdn_Controller {
    
    public function Initialize() {
       $this->Head = new HeadModule($this);
-      $this->AddJsFile('js/library/jquery.js');
-      $this->AddJsFile('js/library/jquery.livequery.js');
-      $this->AddJsFile('js/library/jquery.form.js');
-      $this->AddJsFile('js/library/jquery.popup.js');
-      $this->AddJsFile('js/library/jquery.menu.js');
-      $this->AddJsFile('js/library/jquery.gardenhandleajaxform.js');
-      $this->AddJsFile('js/global.js');
+      $this->AddJsFile('jquery.js');
+      $this->AddJsFile('jquery.livequery.js');
+      $this->AddJsFile('jquery.form.js');
+      $this->AddJsFile('jquery.popup.js');
+      $this->AddJsFile('jquery.gardenhandleajaxform.js');
+      $this->AddJsFile('global.js');
       
       $this->AddCssFile('style.css');
       $GuestModule = new GuestModule($this);
-      $GuestModule->MessageCode = "It looks like you're new here. If you want to take part in the discussions, click one of these buttons!";
       $this->AddModule($GuestModule);
       parent::Initialize();
    }
@@ -62,9 +60,9 @@ class ActivityController extends Gdn_Controller {
             $this->ActivityModel->Delete($ActivityID);
       }
       
-      if ($this->_DeliveryType === DELIVERY_TYPE_ALL) {
-         Redirect(GetIncomingValue('Return', Gdn_Url::WebRoot()));
-      }
+      if ($this->_DeliveryType === DELIVERY_TYPE_ALL)
+         Redirect(GetIncomingValue('Target', $this->SelfUrl));
+
       $this->ControllerName = 'Home';
       $this->View = 'FileNotFound';
       $this->Render();

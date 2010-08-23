@@ -42,6 +42,14 @@ class HomeController extends Gdn_Controller {
       $this->Render();
    }
    
+   public function UpdateMode() {
+      $this->Render();
+   }
+
+   public function Deleted() {
+      $this->Render();
+   }
+   
    public function TermsOfService() {
       $this->Render();
    }
@@ -50,14 +58,6 @@ class HomeController extends Gdn_Controller {
       $this->Render();
    }
    
-   /**
-    * Displays a message telling the user that their registration will be
-    * reviewed by an administrator.
-    */
-   public function RegistrationUnderApproval() {
-      $this->Render();
-   }
-
    public function Permission() {
       $this->Render();
    }

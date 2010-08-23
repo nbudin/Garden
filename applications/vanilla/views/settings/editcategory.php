@@ -12,12 +12,18 @@ echo $this->Form->Errors();
       ?>
    </li>
    <?php if ($this->Category->AllowDiscussions) { ?>
-   <li>
-      <?php echo $this->Form->Label('Url Code', 'UrlCode'); ?>
-      <div class="Info">
-         <?php echo T('The "Url Code" is used to identify the category. It can only contain letters, numbers, underscores, and dashes. It must be unique.'); ?>
-      </div>
-      <?php echo $this->Form->TextBox('UrlCode'); ?>
+   <li id="UrlCode">
+		<?php
+		echo Wrap(T('Category Url:'), 'strong');
+		echo ' ';
+		echo Gdn::Request()->Url('category', TRUE);
+		echo '/';
+		echo Wrap($this->Form->GetValue('UrlCode'));
+		echo $this->Form->TextBox('UrlCode');
+		echo '/';
+		echo Anchor(T('edit'), '#', 'Edit');
+		echo Anchor(T('OK'), '#', 'Save SmallButton');
+		?>
    </li>
    <?php } ?>
    <li>
@@ -28,12 +34,14 @@ echo $this->Form->Errors();
    </li>
    <li>
       <?php
+		if(count($this->PermissionData) > 0) {
          if (!$this->Category->AllowDiscussions) {
             echo T('This is a parent category that does not allow discussions.');
          } else {
             echo T('Check all permissions that apply for each role');
             echo $this->Form->CheckBoxGridGroups($this->PermissionData, 'Permission');
          }
+		}
       ?>
    </li>
 </ul>

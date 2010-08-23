@@ -40,10 +40,18 @@ if (!function_exists('Anchor')) {
       
       if ($Attributes == '')
          $Attributes = array();
+			
+		$SSL = GetValue('SSL', $Attributes, NULL);
+		if ($SSL)
+			unset($Attributes['SSL']);
+		
+		$WithDomain = GetValue('WithDomain', $Attributes, FALSE);
+		if ($WithDomain)
+			unset($Attributes['WithDomain']);
 
       $Prefix = substr($Destination, 0, 7);
-      if (!in_array($Prefix, array('http://', 'mailto:')) && ($Destination != '' || $ForceAnchor === FALSE))
-         $Destination = Url($Destination);
+      if (!in_array($Prefix, array('https:/', 'http://', 'mailto:')) && ($Destination != '' || $ForceAnchor === FALSE))
+         $Destination = Gdn::Request()->Url($Destination, $WithDomain, $SSL);
 
       return '<a href="'.$Destination.'"'.Attribute($CssClass).Attribute($Attributes).'>'.$Text.'</a>';
    }
@@ -56,7 +64,16 @@ if (!function_exists('Anchor')) {
  */
 if (!function_exists('FormatPossessive')) {
    function FormatPossessive($Word) {
+		if(function_exists('FormatPossessiveCustom'))
+			return FormatPossesiveCustom($Word);
+			
       return substr($Word, -1) == 's' ? $Word."'" : $Word."'s";
+   }
+}
+
+if (!function_exists('HoverHelp')) {
+   function HoverHelp($String, $Help) {
+      return Wrap($String.Wrap($Help, 'span', array('class' => 'Help')), 'span', array('class' => 'HoverHelp'));
    }
 }
 
@@ -85,7 +102,7 @@ if (!function_exists('Img')) {
  */
 if (!function_exists('Plural')) {
    function Plural($Number, $Singular, $Plural) {
-      return T($Number == 1 ? $Singular : $Plural);
+      return sprintf(T($Number == 1 ? $Singular : $Plural), $Number);
    }
 }
 
@@ -126,12 +143,44 @@ if (!function_exists('UserPhoto')) {
    function UserPhoto($User, $CssClass = '') {
       $CssClass = $CssClass == '' ? '' : ' class="'.$CssClass.'"';
       if ($User->Photo != '') {
-         $PhotoUrl = strtolower(substr($User->Photo, 0, 7)) == 'http://' ? $User->Photo : 'uploads/n'.$User->Photo;
+         $PhotoUrl = strtolower(substr($User->Photo, 0, 7)) == 'http://' ? $User->Photo : 'uploads/'.ChangeBasename($User->Photo, 'n%s');
          return '<a href="'.Url('/profile/'.$User->UserID.'/'.urlencode($User->Name)).'"'.$CssClass.'>'
             .Img($PhotoUrl, array('alt' => urlencode($User->Name)))
             .'</a>';
       } else {
          return '';
       }
+   }
+}
+/**
+ * Wrap the provided string in the specified tag. ie. Wrap('This is bold!', 'b');
+ */
+if (!function_exists('Wrap')) {
+   function Wrap($String, $Tag = 'span', $Attributes = '') {
+		if ($Tag == '')
+			return $String;
+		
+      if (is_array($Attributes))
+         $Attributes = Attribute($Attributes);
+         
+      return '<'.$Tag.$Attributes.'>'.$String.'</'.$Tag.'>';
+   }
+}
+/**
+ * Wrap the provided string in the specified tag. ie. Wrap('This is bold!', 'b');
+ */
+if (!function_exists('DiscussionLink')) {
+   function DiscussionLink($Discussion, $Extended = TRUE) {
+      $DiscussionID = GetValue('DiscussionID', $Discussion);
+      $DiscussionName = GetValue('Name', $Discussion);
+      $Parts = array(
+         'discussion',
+         $DiscussionID,
+         Gdn_Format::Url($DiscussionName)
+      );
+      if ($Extended) {
+         $Parts[] = ($Discussion->CountCommentWatch > 0) ? '#Item_'.$Discussion->CountCommentWatch : '';
+      }
+		return Url(implode('/',$Parts), TRUE);
    }
 }

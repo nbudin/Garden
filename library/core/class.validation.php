@@ -432,7 +432,7 @@ class Gdn_Validation {
     * @param boolean $Insert A boolean value indicating if the posted fields are to be inserted or
     *  updated. If being inserted, the schema's required field rules will be
     *  enforced.
-    * @return unknown
+    * @return boolean Whether or not the validation was successful.
     */
    public function Validate($PostedFields, $Insert = FALSE) {
       $this->DefineValidationFields($PostedFields, $this->_Schema, $Insert);
@@ -504,14 +504,19 @@ class Gdn_Validation {
     * @param unknown_type $ErrorCode
     * @todo add doc
     */
-   public function AddValidationResult($FieldName, $ErrorCode) {
+   public function AddValidationResult($FieldName, $ErrorCode = '') {
       if (!is_array($this->_ValidationResults))
          $this->_ValidationResults = array();
 
-      if (!array_key_exists($FieldName, $this->_ValidationResults))
-         $this->_ValidationResults[$FieldName] = array();
+      if(is_array($FieldName)) {
+         $ValidationResults = $FieldName;
+         $this->_ValidationResults = array_merge($this->_ValidationResults, $ValidationResults);
+      } else {
+         if (!array_key_exists($FieldName, $this->_ValidationResults))
+            $this->_ValidationResults[$FieldName] = array();
 
-      $this->_ValidationResults[$FieldName][] = $ErrorCode;
+         $this->_ValidationResults[$FieldName][] = $ErrorCode;
+      }
    }
 
 

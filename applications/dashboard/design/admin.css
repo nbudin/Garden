@@ -1,10 +1,7 @@
-@import url('reset.css') /* NoFollow */; 
 /*
 Welcome to the Admin CSS File! Some things you should know:
 
-1. The reset.css file imported above breaks all elements down to a base style.
-
-2. This css file will be included on all "admin" pages. Specifically:
+1. This css file will be included on all "admin" pages. Specifically:
    + Home/*
    + Messages/*
    + Role/*
@@ -12,13 +9,13 @@ Welcome to the Admin CSS File! Some things you should know:
    + Settings/*
    + User/*
 
-3. This file is broken down into the following sections:
+2. This file is broken down into the following sections:
    + General Styles & Typography
    + Forms
    + Header
    + Panels / Sidebars
    + Dashboard
-   + User Search Page
+   + User Pages
    + Splash Information Page
    + Popups
    + Legal
@@ -26,7 +23,53 @@ Welcome to the Admin CSS File! Some things you should know:
    + Footer
 */
    
-
+/* ================================================================ Reset CSS */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+   margin: 0;
+   padding: 0;
+   border: 0;
+   outline: 0;
+   font-weight: inherit;
+   font-style: inherit;
+   font-size: 100%;
+   font-family: inherit;
+   vertical-align: baseline;
+}
+/* remember to define focus styles! */
+:focus {
+   outline: 0;
+}
+body {
+   line-height: 1;
+   color: black;
+   background: white;
+}
+ol, ul {
+   list-style: none;
+}
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+   border-collapse: separate;
+   border-spacing: 0;
+}
+caption, th, td {
+   text-align: left;
+   font-weight: normal;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+   content: "";
+}
+blockquote, q {
+   quotes: "" "";
+}
 
 /* ============================================== General Styles & Typography */
 body {
@@ -72,6 +115,7 @@ p {
    line-height: 1.6em;
 }
 code {
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    background: #ff9;
@@ -124,6 +168,7 @@ textarea {
    margin: 0;
    width: 250px;
    border: 1px solid #ccc;
+   border-radius: 4px;
 	-moz-border-radius: 4px;
 	-webkit-border-radius: 4px;
 }
@@ -175,6 +220,7 @@ input.Button {
    color: #02475A;
 	text-shadow: 0 1px 0 #fff;
    border: 1px solid #999;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 	box-shadow: 0px 0px 2px #999;
@@ -185,6 +231,7 @@ a.Button {
 	padding: 5px 7px;
 }
 a.SmallButton {
+	margin-right: 10px;
 	padding: 4px;
 	font-size: 12px;
 }
@@ -212,6 +259,11 @@ input.Button:focus {
    padding: 10px 40px 10px 0;
    background: url('images/progress.gif') center center no-repeat;
 }
+.TinyProgress {
+	padding: 10px 40px 10px 0 !important;
+	background: url('images/progress_sm.gif') center center no-repeat;
+}
+
 /* Note: Messages are the yellow notices that appear at the top/center of the
   page to notify users of things like drafts being saved, etc. */
 div.Information {
@@ -241,6 +293,7 @@ div.Messages ul {
    border: 1px solid #ee8 !important;
    margin: 0 auto !important;
    padding: 4px 8px !important;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    background: #ff9 !important;
@@ -267,18 +320,36 @@ div.Errors ul li {
    color: #fff !important;
 }
 div.Errors pre {
-	overflow: auto;
-	font-size: 90%;
-	font-family: monospace;
-	color: #333;
-	background: #ffd;
-	padding: 4px;
-	line-height: 1.3;
+	margin: 10px 0 5px;
+	padding: 4px 8px;
+	display: block;
+   border-radius: 2px;
+   -moz-border-radius: 2px;
+   -webkit-border-radius: 2px;
+   white-space: pre;
+   overflow: auto;
+	box-shadow: 0px 0px 2px #333;
+	-moz-box-shadow: 0px 0px 2px #333;
+	-webkit-box-shadow: 0px 0px 2px #333;  
 }
-
+div.Errors pre,
+div.Errors pre * {
+	background: #ffa !important;
+	font-size: 12px !important;
+	font-weight: normal !important;
+	font-family: monospace !important;
+	text-shadow: none !important;
+	color: #333  !important;
+	line-height: 1.4 !important;
+}
+div.Errors pre * {
+	margin: 0 !important;
+	padding: 0 !important;
+}
 /* Note: Warning, Alert & Info are simple boxes that can be used to wrap message
    strings & imply importance. */
 .DismissMessage {
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    font-size: 14px;
@@ -306,6 +377,7 @@ strong {
    border: 1px solid #b00;
    color: #fff;
    padding: 3px 6px;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 	text-shadow: 1px 1px 1px #444;
@@ -340,17 +412,26 @@ div.DismissMessage a.Dismiss {
 div.DismissMessage a.Dismiss:hover {
 	color: #ff0084;
 }
-/* Note: The close class is used on the "close" anchor in popups. */
-a.Close {
-	color: #777;
-	cursor: pointer;
-	font-family: arial;
-	font-size: 22px;
-	font-weight: bold;
-	padding: 0;
+.HoverHelp {
+	position: relative;
 }
-a.Close:hover {
-	color: #333;
+.HoverHelp .Help {
+	display: none;
+	min-width: 200px;
+	background: #333;
+	color: #fff;
+	font-weight: normal;
+	font-size: 11px;
+	position: absolute;
+	left: -5px;
+	bottom: 20px;
+   border-radius: 2px;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	padding: 6px;
+	box-shadow: 0px 0px 2px #777;
+	-moz-box-shadow: 0px 0px 2px #777;
+	-webkit-box-shadow: 0px 0px 2px #777;  
 }
 /* Note: MorePager is related to the /applications/dashboard/modules/MorePagerModule. */
 .MorePager {
@@ -373,6 +454,8 @@ a.Close:hover {
 	text-decoration: none;
 }
 #PagerLess {
+   border-top-right-radius: 2px;
+   border-top-left-radius: 2px;
    -moz-border-radius-topright: 2px;
    -moz-border-radius-topleft: 2px;
    -webkit-border-top-right-radius: 2px;
@@ -387,9 +470,9 @@ tr#PagerMore td {
 #PagerMore {
    margin-bottom: 1px;
 }
-/* Note: FilterMenu is used on most administrative dashboard screens to help
-   organize information being managed on screen. For example: applications and
-   plugins. */
+/* Note: Tabs are used on administrative dashboard screens to help organize
+  information being managed on screen. For example: applications and plugins.
+*/
 .FilterMenu {
    color: #aaa;
    padding: 0 0 10px;
@@ -401,6 +484,54 @@ tr#PagerMore td {
 .FilterMenu span {
    color: #999;
    padding: 0 4px;
+}
+div.Tabs {
+	display: block;
+   border-bottom: 1px solid #abdafb;
+   padding: 5px 8px;
+   margin: 0;
+   background: #cfecff;
+}
+div.Tabs li {
+   display: inline;
+   margin: 0;
+}
+div.Tabs li a,
+div.Tabs li a:link,
+div.Tabs li a:hover,
+div.Tabs li a:active,
+div.Tabs li a:visited {
+   margin: 0;
+   border: 1px solid #abdafb;
+   border-radius: 3px;
+   -moz-border-radius: 3px;
+   -webkit-border-radius: 3px;
+   background: #bbe2f7;
+   display: inline;
+   font-weight: bold;
+   color: #1e79a7;
+   text-decoration: none;
+   padding: 5px 10px;
+	line-height: 2.6;
+}
+div.Tabs li a:hover {
+   background: #f3fcff;
+}
+div.Tabs li.Active a {
+   background: #fff;
+   color: #474747;
+}
+div.Tabs li a span {
+   line-height: 1;
+   font-size: 80%;
+   padding: 0 3px;
+   border-radius: 3px;
+   -webkit-border-radius: 3px;
+   -moz-border-radius: 3px;
+   font-weight: normal;
+   background: #1e79a7;
+   color: #eaf4fd;
+   margin: 0 0 0 4px;
 }
 
 
@@ -422,6 +553,9 @@ form ul li label {
    font-size: 14px;
 	font-weight: bold;
    }
+form ul li span {
+	display: block;
+}
 body.Messages div.Popup form ul li label {
    width: 100px;
 }
@@ -528,6 +662,7 @@ table tbody td.Info span {
    padding: 0 6px;
 }
 table tbody td.Info strong {
+	margin-right: 10px;
    font-weight: bold;
    color: #000;
 }
@@ -586,6 +721,12 @@ table.AltRows tr.Disabled td,
 table.AltColumns tr.Disabled th,
 table.AltColumns tr.Disabled td {
    background: #d3f0ff;
+}
+
+label.SubLabel {
+   display: inline-block;
+   font-size: 100%;
+   width: 100px;
 }
 
 /* CheckBoxGrid */
@@ -674,6 +815,14 @@ table.AltColumns tr.Disabled td {
    padding: 0px 0px 0px 0px;
 }
 
+.ColumnCheckBoxList {
+   width: 650px;
+}
+.ColumnCheckBoxList li {
+   display: inline-block;
+   width: 321px;
+}
+
 /* =================================================================== Header */
 #Head {
 	background:#e2f4ff none repeat scroll 0 0;
@@ -702,6 +851,7 @@ table.AltColumns tr.Disabled td {
 	border: 1px solid #aedefc;
 	padding: 2px 4px;
 	margin: 0 0 0 6px;
+   border-radius: 3px;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 	vertical-align: middle;
@@ -718,6 +868,7 @@ table.AltColumns tr.Disabled td {
 	border: 1px solid #aedefc;
 	padding: 0 4px;
 	margin: 0 0 0 6px;
+   border-radius: 3px;
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 }
@@ -729,6 +880,7 @@ table.AltColumns tr.Disabled td {
    float: left;
 }
 div.Box {
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    background: #d3f0ff;
@@ -737,13 +889,33 @@ div.Box {
    margin: 0 0 10px 0;
 	border: 1px solid #a5d0e7;
 }
+#Panel div.Group {
+	padding: 0;
+}
 div.Box h4 {
-   font-size: 110%;
+	font-family: 'lucida grande','Lucida Sans Unicode', Tahoma, sans-serif;
+   font-size: 100%;
+   font-weight: bold;
+   margin: 0 0 4px;
+   padding: 0 6px;
    color: #076C8E;
 	text-shadow: #fff 0 1px 0;
-   font-weight: bold;
-   margin: 0;
-   padding: 0 6px;
+}
+div.Box h4 a {
+	display: block;
+   color: #045974;
+	text-shadow: none;
+}
+div.Box h4 a:hover {
+   color: #ff0084;
+	text-shadow: none;
+}
+div.Box h4.Active {
+	background: #045974;
+}
+div.Box h4.Active a {
+	color: #fff;
+	text-shadow: none;
 }
 div.Box dl {
    border-bottom: 1px solid #aedefc;
@@ -776,29 +948,26 @@ ul.PanelInfo li a {
 	padding: 0 8px;
    font-size: 120%;
 	display: block;
+   position: relative;
 }
-ul.PanelInfo li.HighlightButton {
-	background: #ff5;
-}
-ul.PanelInfo li.Active {
-   background: #fff;
-}
-#Panel a.PanelButton {
-   padding: 6px 0;
-   display: block;
-   text-align: center;
-   font-size: 16px;
-   font-weight: bold;
+span.New {
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
-   background: #44c7f4;
-   color: #fff;
-   text-decoration: none;
-   margin: 0 0 10px 0;
+	box-shadow: 0px 0px 2px #777;
+	-moz-box-shadow: 0px 0px 2px #777;
+	-webkit-box-shadow: 0px 0px 2px #777;  
+   position: absolute;
+   top: 3px;
+   right: -4px;
+   padding: 0 4px;
+   background: #ff0;
+   color: #000;
+   font-size: 9px;
+   font-weight: bold;
 }
-#Panel a.PanelButton:hover {
-   background: #11e420;
-   color: #fff;
+ul.PanelInfo li.Active {
+   background: url('images/arrow.png') center left no-repeat #ffffff;
 }
 
 /* ================================================= Dashboard Customizations */
@@ -820,14 +989,37 @@ ul.PanelInfo li.Active {
 	width: 20px;
 	margin-right: 8px;
 }
+#UrlCode strong {
+	color: #000000;
+}
+#UrlCode span {
+	display: inline;
+	background: #ffe;
+	padding: 2px 4px;
+   border-radius: 2px;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+}
+#UrlCode input.InputBox {
+	width: 200px;
+	padding: 3px;
+	font-size: 12px;
+	font-family:'lucida grande','Lucida Sans Unicode',Tahoma,sans-serif;
+}
+#UrlCode a {
+	margin-left: 10px;
+}
 
-
-/* ========================================================= User Search Page */
+/* =============================================================== User Pages */
 #dashboard_user_index div.Info .InputBox {
    margin-right: 6px;
 }
 #dashboard_user_index div.Info .Button {
    margin-right: 20px;
+}
+#Form_User a.SmallButton {
+	line-height: 3;
+	margin-right: 6px;
 }
 
 
@@ -876,6 +1068,7 @@ div.Popup div.Warning {
 }
 div.Popup div.Messages ul {
 	display: block;
+   border-radius: 2px;
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
 }
@@ -914,6 +1107,7 @@ div.Popup div.Body {
   padding: 0px;
   background: #e2f4ff;
   max-width: 500px;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   border: 8px solid #555;
@@ -973,18 +1167,32 @@ div.Popup input.Button {
 body.Entry div.Popup p {
 	color: #000;
 }
+/* Note: The close class is used on the "close" anchor in popups. */
+a.Close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	line-height: 1;
+	color: #555;
+	cursor: pointer;
+	font-family: arial;
+	font-size: 22px;
+	font-weight: bold;
+	padding: 0;
+}
+a.Close:hover {
+	color: #111;
+}
 div.Popup .Footer {
-	border-top: 1px solid #a5d0e7;
-	background: #c0e6fc;
-	padding:4px 8px 0 5px;
+	border: none;
+	background: none;
+	padding: 0;
+	margin: 0;
 	text-align: right;
-	-moz-border-radius-bottomleft: 5px;
-	-moz-border-radius-bottomright: 5px;
-	-webkit-border-bottom-left-radius: 5px;
-	-webkit-border-bottom-right-radius: 5px;
 }
 div.Popup .Footer input.Button {
 	font-size: 11px;
+	margin-right: 2px;
 }
 
 /* ==================================================================== Legal */
@@ -1018,6 +1226,7 @@ div.Legal {
 	margin: 0 0 10px;
 	padding: 2px 10px;
 	border: 1px solid #a5d0e7;
+   border-radius: 3px;
 	-moz-border-radius: 3px;
 	-webkit-border-radius: 3px;
 	background: #f6ffff;
@@ -1027,6 +1236,7 @@ div.Popup div.Legal {
 	padding: 0 10px 10px;
 	border: none;
 	background: none;
+   border-radius: 0;
 	-moz-border-radius: 0;
 	-webkit-border-radius: 0;
 }
@@ -1090,9 +1300,10 @@ table.SelectionGrid td.EmptyCol:hover {
    background: none;
 }
 table.SelectionGrid h4 {
-   font-size: 16px;
-   color: #02455B;
-   text-shadow: 0 1px 0 #fff;
+   color:#02455B;
+   font-size:16px;
+   margin-bottom:10px;
+   text-shadow:0 1px 0 #FFFFFF;
 }
 table.SelectionGrid em {
    display: block;
@@ -1121,12 +1332,18 @@ table.SelectionGrid dl {
 table.SelectionGrid dl dt {
 	display: inline;
    color: #000;
-   border-right: 1px solid #a5d0e7;
+   border-right: 1px solid #e2f4ff;
    padding: 4px 6px 4px 0;
-	margin: 0 4px 0 0;
+   margin: 0 4px 0 0;
 }
 table.SelectionGrid dl dd {
 	display: inline;
+}
+table.SelectionGrid td.Active {
+   -moz-background-clip:border;
+   -moz-background-inline-policy:continuous;
+   -moz-background-origin:padding;
+   background:#e2f4ff none repeat scroll 0 0;
 }
 
 /* =================================================================== Footer */
@@ -1138,8 +1355,18 @@ table.SelectionGrid dl dd {
    font-weight: bold;
    border-top: 1px solid #fff;
    background: #e2f4ff;
-	padding: 10px 18px;
+	padding: 4px 18px 2px;
+	position: relative;
 }
 #Foot a {
 	color: #076C8E;
 }
+#Foot .Version {
+	position: absolute;
+	bottom: 10px;
+	right: 20px;
+	color: #5F9BBF;
+	font-size: 12px;
+	font-weight: normal;
+}
+

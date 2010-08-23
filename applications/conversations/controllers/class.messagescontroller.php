@@ -32,7 +32,7 @@ class MessagesController extends ConversationsController {
          $UserModel = new UserModel();
          foreach ($To as $Name) {
             if (trim($Name) != '') {
-               $User = $UserModel->Get(trim($Name));
+               $User = $UserModel->GetByUsername(trim($Name));
                if (is_object($User))
                   $RecipientUserIDs[] = $User->UserID;
             }
@@ -176,8 +176,6 @@ class MessagesController extends ConversationsController {
    
    /**
     * Shows all uncleared messages within a conversation for the viewing user
-    *
-    * @todo ENFORCE PERMISSIONS SO THAT PEOPLE CAN'T READ OTHER PEOPLE'S MESSAGES
     */
    public function Index($ConversationID = FALSE, $Offset = -1, $Limit = '') {
       $this->Offset = $Offset;
@@ -218,22 +216,20 @@ class MessagesController extends ConversationsController {
       );
       
       $this->Participants = '';
-      // Who is in the conversation?
-      if ($this->RecipientData->NumRows() == 1) {
-         $this->Participants = T('Just you!');
-      } else if ($this->RecipientData->NumRows() == 2) {
-         foreach ($this->RecipientData->Result() as $User) {
-            if ($User->UserID != $Session->UserID)
-               $this->Participants = sprintf(T('%s and you'), UserAnchor($User));
-         }
-      } else {
-         $Users = array();
-         foreach ($this->RecipientData->Result() as $User) {
-            if ($User->UserID != $Session->UserID)
-               $Users[] = UserAnchor($User);
-         }
-         $this->Participants = sprintf(T('%s, and you'), implode(', ', $Users));
+      $Count = 0;
+      $Users = array();
+      foreach($this->RecipientData->Result() as $User) {
+         if($User->Deleted)
+            continue;
+         $Count++;
+         if($User->UserID == $Session->UserID)
+            continue;
+         $Users[] = UserAnchor($User);
       }
+      if(count($Users) == 0)
+         $this->Participants = T('Just you!');
+      else
+         $this->Participants = sprintf(T('%s and you'), implode(', ', $Users));
       
       $this->Title(strip_tags($this->Participants));
 
@@ -314,5 +310,10 @@ class MessagesController extends ConversationsController {
    public function Bookmarked($Offset = 0, $Limit = '') {
       $this->View = 'All';
       $this->All($Offset, $Limit, TRUE);
+   }
+
+   public function Inbox($Offset = 0, $Limit = '', $BookmarkedOnly = FALSE) {
+      $this->View = 'All';
+      $this->All($Offset, $Limit, $BookmarkedOnly);
    }
 }

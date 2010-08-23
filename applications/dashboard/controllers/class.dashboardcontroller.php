@@ -12,6 +12,7 @@ class DashboardController extends Gdn_Controller {
    
    public function __construct() {
       parent::__construct();
+      $this->PageName = 'dashboard';
    }
    
    public function Initialize() {
@@ -24,7 +25,7 @@ class DashboardController extends Gdn_Controller {
       $this->AddJsFile('global.js');
       
       if (in_array($this->ControllerName, array('profilecontroller', 'activitycontroller'))) {
-         $this->AddJsFile('jquery.menu.js');
+         // $this->AddJsFile('jquery.menu.js');
          $this->AddCssFile('style.css');
       } else {
          $this->AddCssFile('admin.css');

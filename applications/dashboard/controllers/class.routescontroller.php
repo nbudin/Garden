@@ -14,16 +14,14 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
 class RoutesController extends DashboardController {
    
    public $Uses = array('Form');
-   public $ReservedRoutes = array('DefaultController', 'Default404', 'DefaultPermission');
    
    public function Index() {
       $this->Permission('Garden.Routes.Manage');
       $this->AddSideMenu('dashboard/routes');
       $this->AddJsFile('routes.js');
       $this->Title(T('Routes'));
-         
-      // Load all routes from conf
-      $this->Routes = Gdn::Config('Routes', array());
+      
+      $this->MyRoutes = Gdn::Router()->Routes;
       $this->Render();
    }
    
@@ -37,40 +35,53 @@ class RoutesController extends DashboardController {
    public function Edit($RouteIndex = FALSE) {
       $this->Permission('Garden.Routes.Manage');
       $this->AddSideMenu('dashboard/routes');
-      $Routes = Gdn::Config('Routes');
-      $this->Route = FALSE;
-      if (is_numeric($RouteIndex) && $RouteIndex !== FALSE) {
-         $Keys = array_keys($Routes);
-         $this->Route = ArrayValue($RouteIndex, $Keys);
-      }
+      $this->Route = Gdn::Router()->GetRoute($RouteIndex);
       
       $Validation = new Gdn_Validation();
       $ConfigurationModel = new Gdn_ConfigurationModel($Validation);
-      $ConfigurationModel->SetField(array('Route', 'Target'));
+      $ConfigurationModel->SetField(array('Route', 'Target', 'Type'));
       
       // Set the model on the form.
       $this->Form->SetModel($ConfigurationModel);
-      
+            
       // If seeing the form for the first time...
       if (!$this->Form->AuthenticatedPostBack()) {
-         // Apply the config settings to the form.
+      
+         // Apply the route info to the form.
          if ($this->Route !== FALSE)
-            $this->Form->SetData(array('Route' => $this->Route, 'Target' => $Routes[$this->Route]));
+            $this->Form->SetData(array(
+               'Route'  => $this->Route['Route'], 
+               'Target' => $this->Route['Destination'], 
+               'Type'   => $this->Route['Type']
+            ));
+            
       } else {
          // Define some validation rules for the fields being saved
          $ConfigurationModel->Validation->ApplyRule('Route', 'Required');
          $ConfigurationModel->Validation->ApplyRule('Target', 'Required');
+         $ConfigurationModel->Validation->ApplyRule('Type', 'Required');
          
          // Validate & Save
          $FormPostValues = $this->Form->FormValues();
-         if (in_array($this->Route, $this->ReservedRoutes))
-            $FormPostValues['Route'] = $this->Route;
+         
+         // Dunno.
+         if ($this->Route['Reserved'])
+            $FormPostValues['Route'] = $this->Route['Route'];
             
          if ($ConfigurationModel->Validate($FormPostValues)) {
-            SaveToConfig('Routes'.'.'.ArrayValue('Route', $FormPostValues), ArrayValue('Target', $FormPostValues));
+            $NewRouteName = ArrayValue('Route', $FormPostValues);
+
+            if ($this->Route !== FALSE && $NewRouteName != $this->Route['Route'])
+               Gdn::Router()->DeleteRoute($this->Route['Route']);
+         
+            Gdn::Router()->SetRoute(
+               $NewRouteName,
+               ArrayValue('Target', $FormPostValues),
+               ArrayValue('Type', $FormPostValues)
+            );
+
             $this->StatusMessage = T("The route was saved successfully.");
-            if ($this->_DeliveryType == DELIVERY_TYPE_ALL)
-               $this->RedirectUrl = Url('dashboard/routes');
+            $this->RedirectUrl = Url('dashboard/routes');
          } else {
             $this->Form->SetValidationResults($ConfigurationModel->ValidationResults());
          }
@@ -83,21 +94,10 @@ class RoutesController extends DashboardController {
       $this->Permission('Garden.Routes.Manage');
       $this->DeliveryType(DELIVERY_TYPE_BOOL);
       $Session = Gdn::Session();
-      $Routes = Gdn::Config('Routes');
-      $Key = FALSE;
-      if (is_numeric($RouteIndex) && $RouteIndex !== FALSE) {
-         $Keys = array_keys($Routes);
-         $Key = ArrayValue($RouteIndex, $Keys);
-      }
       
       // If seeing the form for the first time...
-      if ($TransientKey !== FALSE
-         && $Session->ValidateTransientKey($TransientKey)
-         && !in_array($Key, $this->ReservedRoutes)
-         && $Key !== FALSE
-      ) {
-         RemoveFromConfig('Routes'.'.'.$Key);
-      }
+      if ($TransientKey !== FALSE && $Session->ValidateTransientKey($TransientKey))
+         Gdn::Router()->DeleteRoute($RouteIndex);
       
       if ($this->_DeliveryType === DELIVERY_TYPE_ALL)
          Redirect('dashboard/routes');
@@ -110,5 +110,6 @@ class RoutesController extends DashboardController {
       parent::Initialize();
       if ($this->Menu)
          $this->Menu->HighlightRoute('/dashboard/settings');
-   }   
+   }
+
 }

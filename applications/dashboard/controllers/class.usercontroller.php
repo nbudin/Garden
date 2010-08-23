@@ -22,7 +22,7 @@ class UserController extends DashboardController {
          '',
          FALSE
       );
-      $this->AddJsFile('js/library/jquery.gardenmorepager.js');
+      $this->AddJsFile('jquery.gardenmorepager.js');
       $this->AddJsFile('user.js');
       $this->Title(T('Users'));
 
@@ -34,9 +34,8 @@ class UserController extends DashboardController {
       $Offset = is_numeric($Offset) ? $Offset : 0;
       if (!$Keywords) {
          $Keywords = $this->Form->GetFormValue('Keywords');
-         if ($Keywords) {
+         if ($Keywords)
             $Offset = 0;
-         }
       }
 
       // Put the Keyword back in the form
@@ -44,10 +43,10 @@ class UserController extends DashboardController {
          $this->Form->SetFormValue('Keywords', $Keywords);
 
       $UserModel = new UserModel();
-      $Like = trim($Keywords) == '' ? FALSE : array('u.Name' => $Keywords, 'u.Email' => $Keywords);
+      //$Like = trim($Keywords) == '' ? FALSE : array('u.Name' => $Keywords, 'u.Email' => $Keywords);
       $Limit = 30;
-      $TotalRecords = $UserModel->GetCountLike($Like);
-      $this->UserData = $UserModel->GetLike($Like, 'u.Name', 'asc', $Limit, $Offset);
+      $TotalRecords = $UserModel->SearchCount($Keywords);
+      $this->UserData = $UserModel->Search($Keywords, 'u.Name', 'asc', $Limit, $Offset);
 
       // Build a pager
       $PagerFactory = new Gdn_PagerFactory();
@@ -70,17 +69,6 @@ class UserController extends DashboardController {
          $this->View = 'users';
       }
 
-      $this->Render();
-   }
-
-   public function AutoComplete() {
-      $this->DeliveryType(DELIVERY_TYPE_NONE);
-      $Q = GetIncomingValue('q');
-      $UserModel = new UserModel();
-      $Data = $UserModel->GetLike(array('u.Name' => $Q), 'u.Name', 'asc', 10, 0);
-      foreach ($Data->Result() as $User) {
-         echo Gdn_Format::Text($User->Name).'|'.Gdn_Format::Text($User->UserID)."\n";
-      }
       $this->Render();
    }
 
@@ -112,56 +100,11 @@ class UserController extends DashboardController {
 
       $this->Render();
    }
-
-   public function Browse($Offset = FALSE, $Keywords = '') {
-      $this->View = 'index';
-      $this->Index($Offset, $Keywords);
-   }
-
-   public function Edit($UserID) {
-      $this->Permission('Garden.Users.Edit');
-      $this->AddJsFile('user.js');
-
-      $this->AddSideMenu('dashboard/user');
-
-      $RoleModel = new Gdn_Model('Role');
-      $this->RoleData = $RoleModel->Get();
-
-      $UserModel = new UserModel();
-      $this->User = $UserModel->Get($UserID);
-
-      // Set the model on the form.
-      $this->Form->SetModel($UserModel);
-
-      // Make sure the form knows which item we are editing.
-      $this->Form->AddHidden('UserID', $UserID);
-
-      if (!$this->Form->AuthenticatedPostBack()) {
-         $this->Form->SetData($this->User);
-         $this->UserRoleData = $UserModel->GetRoles($UserID);
-      } else {
-         // If a new password was specified, add it to the form's collection
-         $ResetPassword = $this->Form->GetValue('ResetPassword', FALSE);
-         $NewPassword = $this->Form->GetValue('NewPassword', '');
-         if ($ResetPassword !== FALSE)
-            $this->Form->SetFormValue('Password', $NewPassword);
-
-         if ($this->Form->Save(array('SaveRoles' => TRUE)) !== FALSE) {
-            if ($this->Form->GetValue('Password', '') != '')
-               $UserModel->SendPasswordEmail($UserID, $NewPassword);
-
-            $this->StatusMessage = T('Your changes have been saved successfully.');
-         }
-         $this->UserRoleData = $this->Form->GetFormValue('RoleID');
-      }
-
-      $this->Render();
-   }
-
-   public function Applicants() {
+	
+	public function Applicants() {
       $this->Permission('Garden.Users.Approve');
       $this->AddSideMenu('dashboard/user/applicants');
-      $this->AddJsFile('/js/library/jquery.gardencheckcolumn.js');
+      $this->AddJsFile('jquery.gardencheckcolumn.js');
       $this->Title(T('Applicants'));
 
       if ($this->Form->AuthenticatedPostBack() === TRUE) {
@@ -181,14 +124,15 @@ class UserController extends DashboardController {
       $this->Render();
    }
 
-   public function Approve($UserID = '', $PostBackKey = '') {
+	public function Approve($UserID = '', $PostBackKey = '') {
       $this->Permission('Garden.Users.Approve');
       $Session = Gdn::Session();
-      if ($Session->ValidateTransientKey($PostBackKey))
-      
-         if($this->HandleApplicant('Approve', $UserID)) {
+      if ($Session->ValidateTransientKey($PostBackKey)) {
+         $Approved = $this->HandleApplicant('Approve', $UserID);
+         if ($Approved) {
             $this->StatusMessage = T('Your changes have been saved.');
          }
+      }
 
       if ($this->_DeliveryType == DELIVERY_TYPE_BOOL) {
          return $this->Form->ErrorCount() == 0 ? TRUE : $this->Form->Errors();
@@ -196,6 +140,84 @@ class UserController extends DashboardController {
          $this->Applicants();
       }
    }
+	
+   public function AutoComplete() {
+      $this->DeliveryType(DELIVERY_TYPE_NONE);
+      $Q = GetIncomingValue('q');
+      $UserModel = new UserModel();
+      $Data = $UserModel->GetLike(array('u.Name' => $Q), 'u.Name', 'asc', 10, 0);
+      foreach ($Data->Result() as $User) {
+         echo Gdn_Format::Text($User->Name).'|'.Gdn_Format::Text($User->UserID)."\n";
+      }
+      $this->Render();
+   }
+	
+   public function Browse($Offset = FALSE, $Keywords = '') {
+      $this->View = 'index';
+      $this->Index($Offset, $Keywords);
+   }
+
+   public function Edit($UserID) {
+      $this->Permission('Garden.Users.Edit');
+      $this->AddJsFile('user.js');
+      $this->Title(T('Edit User'));
+
+      $this->AddSideMenu('dashboard/user');
+      
+      $this->CanEditUsername = TRUE;
+      $this->CanEditUsername = $this->CanEditUsername & Gdn::Config("Garden.Profile.EditUsernames");
+      $this->CanEditUsername = $this->CanEditUsername | Gdn::Session()->CheckPermission('Garden.Users.Edit');
+
+      $RoleModel = new Gdn_Model('Role');
+      $this->RoleData = $RoleModel->Get();
+
+      $UserModel = new UserModel();
+      $this->User = $UserModel->Get($UserID);
+
+      // Set the model on the form.
+      $this->Form->SetModel($UserModel);
+
+      // Make sure the form knows which item we are editing.
+      $this->Form->AddHidden('UserID', $UserID);
+
+      if (!$this->Form->AuthenticatedPostBack()) {
+         $this->Form->SetData($this->User);
+         $this->UserRoleData = $UserModel->GetRoles($UserID);
+      } else {
+         if (!$this->CanEditUsername)
+            $this->Form->SetFormValue("Name", $this->User->Name);
+            
+         // If a new password was specified, add it to the form's collection
+         $ResetPassword = $this->Form->GetValue('ResetPassword', FALSE);
+         $NewPassword = $this->Form->GetValue('NewPassword', '');
+         if ($ResetPassword !== FALSE)
+            $this->Form->SetFormValue('Password', $NewPassword);
+
+         if ($this->Form->Save(array('SaveRoles' => TRUE)) !== FALSE) {
+            if ($this->Form->GetValue('Password', '') != '')
+               $UserModel->SendPasswordEmail($UserID, $NewPassword);
+
+            $this->StatusMessage = T('Your changes have been saved successfully.');
+         }
+         $this->UserRoleData = $this->Form->GetFormValue('RoleID');
+      }
+
+      $this->Render();
+   }
+
+	public function EmailAvailable($Email = '') {
+		$this->_DeliveryType = DELIVERY_TYPE_BOOL;
+      $Available = TRUE;
+      if ($Email != '') {
+         $UserModel = Gdn::UserModel();
+         if ($UserModel->GetByEmail($Email))
+            $Available = FALSE;
+      }
+      if (!$Available)
+         $this->Form->AddError(sprintf(T('%s unavailable'), T('Email')));
+         
+      $this->Render();
+	}
 
    public function Decline($UserID = '', $PostBackKey = '') {
       $this->Permission('Garden.Users.Approve');
@@ -212,6 +234,26 @@ class UserController extends DashboardController {
       }
    }
 
+   public function Delete($UserID = '', $Method = '') {
+      $this->Permission('Garden.Users.Delete');
+      $this->AddSideMenu('dashboard/user');
+      $this->Title(T('Delete User'));
+
+      $UserModel = new UserModel();
+      $this->User = $UserModel->Get($UserID);
+      $Method = in_array($Method, array('delete', 'keep', 'wipe')) ? $Method : '';
+      $this->Method = $Method;
+      if ($Method != '')
+         $this->View = 'deleteconfirm';
+         
+      if ($this->Form->AuthenticatedPostBack() && $Method != '') {
+         $UserModel->Delete($UserID, array('DeleteMethod' => $Method));
+         $this->View = 'deletecomplete';
+      }
+
+      $this->Render();
+   }
+
    private function HandleApplicant($Action, $UserID) {
       $this->Permission('Garden.Users.Approve');
       //$this->_DeliveryType = DELIVERY_TYPE_BOOL;
@@ -220,27 +262,36 @@ class UserController extends DashboardController {
          $Result = FALSE;
       } else {
          $Session = Gdn::Session();
-         //if (!$Session->CheckPermission('Garden.Users.Approve')) {
-         //   $this->Form->AddError('ErrorPermission');
-         //} else {
-            $UserModel = new UserModel();
-            if (is_numeric($UserID)) {
-               try {
-                  $Email = new Gdn_Email();
-                  $Result = $UserModel->$Action($UserID, $Email);
-               } catch(Exception $ex) {
-                  $Result = FALSE;
-                  $this->Form->AddError(strip_tags($ex->getMessage()));
-               }
+         $UserModel = new UserModel();
+         if (is_numeric($UserID)) {
+            try {
+               $Email = new Gdn_Email();
+               $Result = $UserModel->$Action($UserID, $Email);
+            } catch(Exception $ex) {
+               $Result = FALSE;
+               $this->Form->AddError(strip_tags($ex->getMessage()));
             }
-         //}
+         }
       }
    }
-
 
    public function Initialize() {
       parent::Initialize();
       if ($this->Menu)
          $this->Menu->HighlightRoute('/dashboard/settings');
+   }
+	
+	public function UsernameAvailable($Name = '') {
+      $this->_DeliveryType = DELIVERY_TYPE_BOOL;
+      $Available = TRUE;
+      if ($Name != '') {
+         $UserModel = Gdn::UserModel();
+         if ($UserModel->GetByUsername($Name))
+            $Available = FALSE;
+      }
+      if (!$Available)
+         $this->Form->AddError(sprintf(T('%s unavailable'), T('Name')));
+         
+      $this->Render();
    }
 }

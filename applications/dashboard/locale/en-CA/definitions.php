@@ -22,7 +22,7 @@ if (!function_exists('FormatPossessive')) {
 
 if (!function_exists('Plural')) {
    function Plural($Number, $Singular, $Plural) {
-      return T($Number == 1 ? $Singular : $Plural);
+      return sprintf(T($Number == 1 ? $Singular : $Plural), $Number);
    }
 }
 
@@ -40,10 +40,11 @@ $Definition['ValidateBoolean'] = '%s is not a valid boolean.';
 $Definition['ValidateDecimal'] = '%s is not a valid decimal.';
 $Definition['ValidateTime'] = '%s is not a valid time.';
 $Definition['ValidateTimestamp'] = '%s is not a valid timestamp.';
+$Definition['ValidateUsername'] = 'Usernames must be 3-20 characters and consist of letters, numbers, and underscores.';
 $Definition['ValidateLength'] = '%1$s is %2$s characters too long.';
 $Definition['ValidateEnum'] = '%s is not valid.';
 $Definition['ValidateOneOrMoreArrayItemRequired'] = 'You must select at least one %s.';
-$Definition['ValidateConnection'] = 'The connection parameters you specified failed to open a connection to the database. The database reported the following error: %s';
+$Definition['ValidateConnection'] = 'The connection parameters you specified failed to open a connection to the database. The database reported the following error: <code>%s</code>';
 $Definition['ValidateMinimumAge'] = 'You must be at least 16 years old to proceed.';
 $Definition['ValidateMatch'] = 'The %s fields do not match.';
 
@@ -59,6 +60,11 @@ $Definition['PageDetailsMessageFull'] = '%1$s to %2$s of %3$s';
 $Definition['PageDetailsMessage'] = '%1$s to %2$s';
 $Definition['RoleID'] = 'role';
 $Definition['Garden.Registration.DefaultRoles'] = 'default role';
+$Definition['Garden.Title'] = 'Banner Title';
+$Definition['Garden.Email.SupportName'] = 'Support name';
+$Definition['Garden.Email.SupportAddress'] = 'Support email';
+$Definition['UrlCode'] = 'Url code';
+$Definition['OldPassword'] = 'Old password';
 
 $Definition['RoleID'] = 'role';
 
@@ -123,5 +129,7 @@ $Definition['Date.DefaultFormat'] = '%B %e, %Y';
 $Definition['Date.DefaultDayFormat'] = '%B %e';
 $Definition['Date.DefaultYearFormat'] = '%B %Y';
 $Definition['Date.DefaultTimeFormat'] = '%l:%M%p';
+$Definition['Saved'] = 'Your changes have been saved.';
+$Definition['%s New Plural'] = '%s New';
 
 // TODO: PROVIDE TRANSLATIONS FOR ALL CONFIGURATION SETTINGS THAT ARE EDITABLE ON ADMIN FORMS (ie. Vanilla.Comments.MaxLength, etc).

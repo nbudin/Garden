@@ -54,8 +54,32 @@ class Gdn_PasswordHash extends PasswordHash {
     * @param string $StoredHash
     * @return boolean
     */
-   function CheckPassword($Password, $StoredHash) {
-      $this->Weak = FALSE;
+   function CheckPassword($Password, $StoredHash, $Method = FALSE) {
+      $Result = FALSE;
+		switch(strtolower($Method)) {
+         case 'phpbb':
+            require_once(PATH_LIBRARY.'/vendors/phpbb/phpbbhash.php');
+            $Result = phpbb_check_hash($Password, $StoredHash);
+            break;
+         case 'reset':
+            throw new Gdn_UserException(sprintf(T('You need to reset your password.', 'You need to reset your password. This is most likely because an administrator recently changed your account information. Click <a href="%s">here</a> to reset your password.'), Url('entry/passwordrequest')));
+            break;
+			case 'vbulletin':
+				$Salt = trim(substr($StoredHash, -3, 3));
+				$VbStoredHash = substr($StoredHash, 0, strlen($StoredHash) - 3);
+				$VbHash = md5(md5($Password).$Salt);
+				$Result = $VbHash == $VbStoredHash;
+				break;
+			case 'vanilla':
+			default:
+				$Result = $this->CheckVanilla($Password, $StoredHash);
+		}
+		
+		return $Result;
+   }
+	
+	function CheckVanilla($Password, $StoredHash) {
+		$this->Weak = FALSE;
       if (!isset($StoredHash[0]))
          return FALSE;
       
@@ -68,5 +92,5 @@ class Gdn_PasswordHash extends PasswordHash {
          return TRUE;
       }
       return FALSE;
-   }
+	}
 }

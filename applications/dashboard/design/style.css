@@ -1,14 +1,11 @@
-@import url('reset.css') /* NoFollow */; 
 /*
 Welcome to the Generic Style CSS File! Some things you should know:
 
-1. The reset.css file imported above breaks all elements down to a base style.
-
-2. This file is included on all front-end/user-facing pages. Applications can
+1. This file is included on all front-end/user-facing pages. Applications can
    override this file in their own custom files (ie. vanilla.css or
    conversations.css).
 
-3. This file is broken down into the following sections:
+2. This file is broken down into the following sections:
    + General Styles & Typography
    + Header
    + Main Menu
@@ -19,8 +16,55 @@ Welcome to the Generic Style CSS File! Some things you should know:
    + Thumbnail Cropper
    + Footer
 */
-   
-   
+
+/* ================================================================ Reset CSS */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+   margin: 0;
+   padding: 0;
+   border: 0;
+   outline: 0;
+   font-weight: inherit;
+   font-style: inherit;
+   font-size: 100%;
+   font-family: inherit;
+   vertical-align: baseline;
+}
+/* remember to define focus styles! */
+:focus {
+   outline: 0;
+}
+body {
+   line-height: 1;
+   color: black;
+   background: white;
+}
+ol, ul {
+   list-style: none;
+}
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+   border-collapse: separate;
+   border-spacing: 0;
+}
+caption, th, td {
+   text-align: left;
+   font-weight: normal;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+   content: "";
+}
+blockquote, q {
+   quotes: "" "";
+}
+
 /* ============================================== General Styles & Typography */
 body {
    color: #000;
@@ -36,9 +80,6 @@ body {
 #Body {
    width: 960px;
    text-align: left;
-   margin: 0 auto;
-}
-#Body {
    margin: 15px auto 0;
 }
 #Content {
@@ -107,6 +148,7 @@ textarea {
    margin: 0;
    width: 250px;
    border: 1px solid #aaa;
+   border-radius: 2px;
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
 }
@@ -147,6 +189,7 @@ a.Button,
    color: #02475A;
 	text-shadow: 0 1px 0 #fff;
    border: 1px solid #999;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 	box-shadow: 0px 0px 2px #999;
@@ -206,6 +249,8 @@ div.Messages ul {
    border: 0 !important;
    margin: 0 auto !important;
    padding: 4px 8px !important;
+   border-bottom-left-radius: 2px;
+   border-bottom-right-radius: 2px;
    -moz-border-radius-bottomleft: 2px;
    -moz-border-radius-bottomright: 2px;
    -webkit-border-bottom-left-radius: 2px;
@@ -234,6 +279,18 @@ div.Errors ul li {
    color: #fff !important;
    background: #d50a0a !important;
 }
+.Conversations .Deleted {
+   text-decoration: line-through;
+}
+div.Deleted {
+	background: #f5f5f5;
+	border: 1px solid #dddddd;
+	margin: 10px 0 0;
+	padding: 6px 10px;
+   border-radius: 3px;
+   -moz-border-radius: 3px;
+   -webkit-border-radius: 3px;
+}
 /* Note: Warning, Alert & Info are simple boxes that can be used to wrap message
    strings & imply importance. */
 .Warning {
@@ -241,6 +298,7 @@ div.Errors ul li {
    border: 1px solid #ff9;
    color: #000;
    padding: 6px 8px;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 }
@@ -249,6 +307,7 @@ div.Errors ul li {
    border: 1px solid #b00;
    color: #fff;
    padding: 3px 6px;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 }
@@ -264,8 +323,13 @@ div.Info {
    border: 1px solid #eee;
    color: #888;
    -moz-border-radius: 4px;
+   -webkit-border-radius: 4px;
+   border-radius: 4px;
    padding: 6px;
    margin: 0 0 10px;
+}
+div.Info strong {
+	font-weight: bold;
 }
 /* Note: The MessageModule (in /applications/dashboard/modules) wraps all messages
   that it renders in a div with this DismissMessage class. */
@@ -287,23 +351,13 @@ div.DismissMessage a.Dismiss {
 div.DismissMessage a.Dismiss:hover {
 	color: #ff0084;
 }
-/* Note: The close class is used on the "close" anchor in popups. */
-a.Close {
-	color:#777;
-	font-family:arial;
-	font-size:20px;
-	font-weight:bold;
-	cursor:pointer;
-	padding: 0 2px;
-}
-a.Close:hover {
-	color: #333;
-}
 #PagerLess {
    -moz-border-radius-topright: 2px;
    -moz-border-radius-topleft: 2px;
    -webkit-border-top-right-radius: 2px;
    -webkit-border-top-left-radius: 2px;
+   border-radius-topright: 2px;
+   border-radius-topleft: 2px;
    margin-bottom: 1px;
 	text-align: left;
 }
@@ -355,6 +409,7 @@ div.MorePager a.Loading {
    padding: 0;
    text-align: right;
 }
+div.Search:after,
 div#Search:after {
    content: ".";
    display: block;
@@ -387,6 +442,7 @@ body #Head h1 {
    margin: 15px 0 0;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
+   border-radius: 2px;
 }
 #Head form input.InputBox {
    width: 204px;
@@ -398,6 +454,8 @@ body #Head h1 {
    -moz-border-radius-bottomleft: 2px;
    -webkit-border-top-left-radius: 2px;
    -webkit-border-bottom-left-radius: 2px;
+   border-top-left-radius: 2px;
+   border-bottom-left-radius: 2px;
    color: #969696;
    font-size: 13px;
 }
@@ -411,10 +469,13 @@ body #Head h1 {
    margin: 0;
    -moz-border-radius: 0;
    -webkit-border-radius: 0;
+   border-radius: 0;
    -moz-border-radius-topright: 2px;
    -moz-border-radius-bottomright: 2px;
    -webkit-border-top-right-radius: 2px;
    -webkit-border-bottom-right-radius: 2px;
+   border-top-right-radius: 2px;
+   border-bottom-right-radius: 2px;
   	box-shadow: none;
 	-moz-box-shadow: none;
 	-webkit-box-shadow: none;     	
@@ -423,25 +484,12 @@ body #Head h1 {
    height: 28px;
    padding: 0;
 }
-#Menu,
-#Menu ul {
+#Menu {
    margin: 0;
    padding: 0;
 }
 #Menu ul {
-   position: absolute;
-   visibility: hidden;
-   z-index: 100;
-   -moz-border-radius-bottomleft: 2px;
-   -moz-border-radius-bottomright: 2px;
-   -webkit-border-bottom-left-radius: 2px;
-   -webkit-border-bottom-right-radius: 2px;
-}
-#Menu li ul li.First {
-   margin-top: 2px;
-}
-#Menu li ul li.Last {
-   padding-bottom: 2px;
+	display: none;
 }
 #Menu li {
    line-height: 27px;
@@ -457,51 +505,6 @@ body #Head h1 {
 * html #Menu li {
 	display: inline;
 }
-* html #Menu ul  {
-	left: 0;
-	top: 27px;
-}
-* html #Menu ul li  {
-	display: block;
-	height: 1%;
-	width: 85px;
-}
-#Menu li
-#Menu li a,
-#Menu li a:hover,
-#Menu li.Active,
-#Menu li.Active a,
-#Menu li.Active a:hover {
-   -moz-border-radius-topleft: 2px;
-   -moz-border-radius-topright: 2px;
-   -webkit-border-top-left-radius: 2px;
-   -webkit-border-top-right-radius: 2px;
-}
-#Menu li ul li,
-#Menu li ul li a,
-#Menu li ul li a:hover,
-#Menu li.Active ul li,
-#Menu li.Active ul li a,
-#Menu li.Active ul li a:hover {
-   -moz-border-radius-topleft: 0;
-   -moz-border-radius-topright: 0;
-   -webkit-border-top-left-radius: 0;
-   -webkit-border-top-right-radius: 0;
-}
-#Menu li ul li.Last a {
-   -moz-border-radius-bottomleft: 1px;
-   -moz-border-radius-bottomright: 1px;
-   -webkit-border-bottom-left-radius: 1px;
-   -webkit-border-bottom-right-radius: 1px;
-}
-#Menu li ul li {
-   margin: 0;
-   line-height: 22px;
-   font-weight: normal;
-}
-#Menu li ul li a {
-   height: auto;
-}
 #Menu a {
    border: 0;
    text-decoration: none;
@@ -516,18 +519,6 @@ body #Head h1 {
    display: inline;
    padding: 6px 10px;
 }
-* html #Menu ul li a  {
-   display: block;
-   padding: 3px 10px;
-   width: 85px;
-}
-#Menu ul li {
-	display: block;
-	float: none;
-}
-#Menu ul .Active .First {
-	padding-left: 1px;
-}
 #Menu li.NonTab,
 #Menu li.NonTab a {
    background: transparent;
@@ -539,7 +530,7 @@ body #Head h1 {
 #Menu li.Highlight a:hover span {
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
-   margin-left: 4px;
+   border-radius: 2px;
    padding: 0 2px;
    font-size: 9px;
    line-height: 12px;
@@ -612,6 +603,7 @@ ul.Options li.Parent strong {
    border: 1px solid #bbb;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
+   border-radius: 2px;
    color: #555;
    cursor: pointer;
    line-height: 100%;
@@ -633,6 +625,8 @@ ul.Options li.Active strong {
    -moz-border-radius-bottomright: 0;
    -webkit-border-bottom-left-radius: 0;
    -webkit-border-bottom-right-radius: 0;
+   border-bottom-left-radius: 0;
+   border-bottom-right-radius: 0;
 }
 ul.Options li.Active {
    background: none;
@@ -644,6 +638,8 @@ ul.Options li.Active ul {
    -moz-border-radius-bottomright: 2px;
    -webkit-border-bottom-left-radius: 2px;
    -webkit-border-bottom-right-radius: 2px;
+   border-bottom-left-radius: 2px;
+   border-bottom-right-radius: 2px;
 }
 ul.Options li.Active ul li a {
    background: none;
@@ -710,6 +706,7 @@ ul#Menu {
    float: right;
 }
 div.Box {
+   border-radius: 1px;
    -moz-border-radius: 1px;
    -webkit-border-radius: 1px;
    background: #cfecff;
@@ -802,13 +799,28 @@ ul.PanelInfo div.Meta span a {
    margin-left: 8px;
 }
 ul.PanelInfo div.Meta strong {
-   font-weight: normal;
-   display: inline;
-   padding: 1px 3px;
-	-moz-border-radius: 2px;
+	display: inline;
+   border-radius: 2px;
+   -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
-	background: #FFFF00;
-	padding:2px 4px;
+	/*
+	box-shadow: 0px 0px 2px #777;
+	-moz-box-shadow: 0px 0px 2px #777;
+	-webkit-box-shadow: 0px 0px 2px #777;
+	*/
+	background: #FF0;
+	color:#000;
+	font-size:9px;
+	font-weight:bold;
+	padding: 3px;
+	line-height: 1;
+}
+ul.PanelInfo li.Parent {
+	text-align: left;
+	font-weight: bold;
+	background: none;
+	color: #333;
+	padding: 2px 0;
 }
 ul.PanelInfo li.Active {
    background: #fff;
@@ -846,6 +858,7 @@ a.BigButton {
    color: #02475A;
 	text-shadow: 0 1px 0 #fff;
    border: 1px solid #999;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 	box-shadow: 0px 0px 2px #999;
@@ -880,22 +893,23 @@ body.Entry #Content {
    width: 360px;
    text-align: center;
 }
-body#dashboard_entry_handshake #Content {
+body#dashboard_entrycontroller_handshake #Content {
 	width: 720px;
 }
-body#dashboard_entry_handshake ul.NewAccount {
+body#dashboard_entrycontroller_handshake ul.NewAccount {
 	float: left;
 	width: 330px;
 	margin-right: 29px;
 	border-right: 1px solid #A5D0E7;
 }
-body#dashboard_entry_handshake div.Info {
+body#dashboard_entrycontroller_handshake div.Info {
 	border: 1px solid #A5D0E7;
 	background: #D3F0FF;
 	color: #02475A;
 }
 body.Entry #Content div.Box {
    background: #c4e1ff;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
 	border: 0;
@@ -907,11 +921,11 @@ body.Entry p {
 	padding: 0 10px;
 	margin: 10px 0 10px;
 }
-body#dashboard_entry_leave p {
+body#dashboard_entrycontroller_leave p {
 	margin: 0;
    padding: 20px 10px;
 }
-body#dashboard_entry_leave p.Leaving {
+body#dashboard_entrycontroller_leave p.Leaving {
    background: url('images/progress.gif') left center no-repeat;
 	margin: 0 0 0 14px;
    padding: 20px 0 20px 50px;
@@ -926,7 +940,7 @@ body.Entry #Content h1 {
 	margin: 0;
 	text-align: left;
 }
-body#dashboard_entry_handshake #Content h2 {
+body#dashboard_entrycontroller_handshake #Content h2 {
    border: none;
    color: #02475A;
    font-size:140%;
@@ -938,6 +952,9 @@ body#dashboard_entry_handshake #Content h2 {
 body.Entry #Content form {
 	text-align: left;
 	padding: 10px 30px 20px;
+}
+body#dashboard_entrycontroller_handshake #Content form {
+	padding: 20px 30px 26px;
 }
 body.Entry form ul li label {
 	font-size: 14px;
@@ -980,8 +997,8 @@ body.Entry li.Buttons input.Button {
 body.Entry #Content #Form_User_Password {
 	padding-top: 0;
 }
-#dashboard_entry_index #Form_User_Password ul li label,
-#dashboard_entry_signin #Form_User_Password ul li label {
+#dashboard_entrycontroller_index #Form_User_Password ul li label,
+#dashboard_entrycontroller_signin #Form_User_Password ul li label {
 	padding: 0;
 }
 
@@ -1040,16 +1057,26 @@ ul.DataList div.Excerpt p {
 	display: inline;
 	padding: 0;
 }
+/* ul.DataList div.Meta span a, */
 ul.DataList div.Meta span,
-ul.DataList div.Meta span a,
 ul.DataList div.Meta strong {
    margin-right: 12px;
 }
 ul.DataList div.Meta strong {
-   background: #fffc00;
-   padding: 2px 4px;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
+	/*
+	box-shadow: 0px 0px 2px #777;
+	-moz-box-shadow: 0px 0px 2px #777;
+	-webkit-box-shadow: 0px 0px 2px #777;
+	*/
+	background: #FF0;
+	color:#000;
+	font-size:9px;
+	font-weight:bold;
+	padding: 3px;
+	line-height: 1;
 }
 ul.DataList div.Meta a {
    color: #2b2d33;
@@ -1060,6 +1087,7 @@ ul.DataList a.Delete {
    margin: 0 1px 0 0;
    font-size: 11px;
    font-weight: normal;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    color: #555;
@@ -1079,12 +1107,14 @@ ul.DataList a.Delete:focus {
 ul.DataList div.Photo {
 	float: left;
 	padding: 0 10px 0 0;
+	font-size: 11px;
 }
 ul.DataList div.Photo img {
 	display: block;
 	height: 43px;
 	width: 43px;
 	overflow: hidden;
+	background: #eee;
 }
 ul.Condensed li,
 li.Condensed {
@@ -1098,10 +1128,13 @@ li.Condensed div.Title {
 	padding: 0;
 }
 ul.Condensed div.Excerpt,
-li.Condensed div.Excerpt,
+li.Condensed div.Excerpt {
+	display: inline;
+}
 ul.Condensed div.Excerpt a,
 li.Condensed div.Excerpt a {
-	display: inline;
+	display: block;
+	padding: 3px 0;
 }
 
 /* =============================================================== Activities */
@@ -1168,8 +1201,10 @@ ul.Activities ul.DataList div.Excerpt p {
 	font-size: 13px;
 	line-height: 1;
 }
+ul.HasPhoto div.Excerpt,
 ul.HasPhoto div.Meta {
-	padding-left: 49px;
+	padding-left: 49px !important;
+	display: block;
 }
 ul.Activities ul.DataList .HasPhoto div.Meta {
 	padding: 2px 0 0;
@@ -1222,7 +1257,7 @@ ul.MessageList li {
 }
 ul.MessageList li.Item {
    border-bottom: 1px solid #ddd;
-	padding: 4px;
+	padding: 10px 4px 4px 10px;
 }
 ul.MessageList div.Meta {
    font-size: 11px;
@@ -1254,6 +1289,9 @@ div.Preview {
 	padding: 1px 8px;
 	margin: 4px 0 8px;
 }
+div.Popup div.Preview {
+	margin: 0;
+}
 div.Preview div.Message,
 ul.MessageList div.Message {
    clear: both;
@@ -1266,6 +1304,7 @@ ul.MessageList div.Message p {
 }
 div.Preview div.Message blockquote,
 ul.MessageList div.Message blockquote {
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
    padding: 4px 16px;
@@ -1277,6 +1316,7 @@ div.Preview div.Message pre,
 ul.MessageList div.Message code,
 ul.MessageList div.Message pre {
    display: block;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    background: #ff9;
@@ -1284,6 +1324,7 @@ ul.MessageList div.Message pre {
    white-space: pre;
    font-family: monospace;
    overflow: auto;
+	border: 1px solid #eec;
 }
 div.Preview div.Message strong,
 ul.MessageList div.Message strong {
@@ -1307,6 +1348,22 @@ div.Preview div.Message ul li,
 ul.MessageList div.Message ul li {
   list-style: disc ! important;
 }
+div.Message h1,
+div.Message h2,
+div.Message h3,
+div.Message h4,
+div.Message h5 {
+	font-family: 'lucida grande','Lucida Sans Unicode', tahoma, sans-serif;
+	font-weight: bold;
+	border: none;
+	color: #000;
+}
+div.Message h1 { font-size: 22px; }
+div.Message h2 { font-size: 20px; }
+div.Message h3 { font-size: 18px; }
+div.Message h4 { font-size: 16px; }
+div.Message h5 { font-size: 14px; }
+
 
 /* The "Foot" is at the bottom of the #Content section. Used for more results
 links, sign in buttons, etc */
@@ -1315,6 +1372,8 @@ links, sign in buttons, etc */
    padding: 6px;
    background: #cfecff;
    text-align: right;
+   border-bottom-right-radius: 2px;
+   border-bottom-left-radius: 2px;
    -moz-border-radius-bottomright: 2px;
    -moz-border-radius-bottomleft: 2px;
    -webkit-border-bottom-right-radius: 2px;
@@ -1343,6 +1402,7 @@ body.Profile #Panel {
    width: 250px;
 }
 ul.SideMenu {
+   border-radius: 0;
    -moz-border-radius: 0;
    -webkit-border-radius: 0;
    background: none;
@@ -1380,6 +1440,8 @@ div.User h1 {
    border: 0;
 }
 #Status {
+   border-top-left-radius: 2px;
+   border-top-right-radius: 2px;
    -moz-border-radius-topleft: 2px;
    -moz-border-radius-topright: 2px;
    -webkit-border-top-left-radius: 2px;
@@ -1408,6 +1470,8 @@ div.User h1 {
    text-decoration: underline;
 }
 div.User form {
+   border-top-left-radius: 2px;
+   border-top-right-radius: 2px;
    -moz-border-radius-topleft: 2px;
    -moz-border-radius-topright: 2px;
    -webkit-border-top-left-radius: 2px;
@@ -1510,6 +1574,11 @@ div.Tabs li {
    display: inline;
    margin: 0;
 }
+div.MessageForm a.Back,
+div.MessageForm a.Back:link,
+div.MessageForm a.Back:hover,
+div.MessageForm a.Back:active,
+div.MessageForm a.Back:visited,
 div.MessageForm a.Cancel,
 div.MessageForm a.Cancel:link,
 div.MessageForm a.Cancel:hover,
@@ -1532,6 +1601,7 @@ div.Tabs li a:active,
 div.Tabs li a:visited {
    margin: 0;
    border: 1px solid #abdafb;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
    background: #bbe2f7;
@@ -1542,6 +1612,11 @@ div.Tabs li a:visited {
    padding: 5px 10px;
 	line-height: 2.6;
 }
+div.MessageForm a.Back,
+div.MessageForm a.Back:link,
+div.MessageForm a.Back:hover,
+div.MessageForm a.Back:active,
+div.MessageForm a.Back:visited,
 div.MessageForm a.Cancel,
 div.MessageForm a.Cancel:link,
 div.MessageForm a.Cancel:hover,
@@ -1549,6 +1624,7 @@ div.MessageForm a.Cancel:active,
 div.MessageForm a.Cancel:visited {
 	line-height: 1.2;
 }
+div.MessageForm a.Back:hover,
 div.MessageForm a.Cancel:hover,
 div.MorePager li a:hover,
 a.TabLink:hover,
@@ -1564,6 +1640,7 @@ div.Tabs li a span {
    line-height: 1;
    font-size: 80%;
    padding: 0 3px;
+   border-radius: 3px;
    -webkit-border-radius: 3px;
    -moz-border-radius: 3px;
    font-weight: normal;
@@ -1575,6 +1652,7 @@ div.Tabs div.SubTab {
 	margin: 10px 0 0;
 	padding: 4px 8px;
 	background: #f3fcff;
+   border-radius: 2px;
    -webkit-border-radius: 2px;
    -moz-border-radius: 2px;
 }
@@ -1609,6 +1687,9 @@ form.Thumbnail table td {
 form.Thumbnail table tr td {
    vertical-align: top;
 }
+form.Thumbnail table tr th {
+	padding-right: 10px;
+}
 .jcropper-holder {
    border: 1px black solid;
 }
@@ -1642,6 +1723,7 @@ form.Thumbnail table tr td {
 .custom .jcrop-handle {
    border-color: black;
    background-color: #C7BB00;
+   border-radius: 3px;
    -moz-border-radius: 3px;
    -webkit-border-radius: 3px;
 }
@@ -1667,6 +1749,7 @@ div.Popup div.Messages {
 }
 div.Popup div.Messages ul {
 	display: block;
+   border-radius: 2px;
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
 }
@@ -1705,6 +1788,7 @@ div.Popup div.Body {
   padding: 0px;
   background: #fff;
   max-width: 500px;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   border: 8px solid #555;
@@ -1734,15 +1818,31 @@ div.Popup h2 {
 	border-bottom: 1px solid #3DB9E5;
 	padding: 6px 9px 4px;
 }
+a.Close {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	line-height: 1;
+	color: #E4F7FE;
+	cursor: pointer;
+	font-family: arial;
+	font-size: 22px;
+	font-weight: bold;
+	padding: 0;
+}
+a.Close:hover {
+	color: #fff;
+}
 div.Popup .Footer {
-  background: #cfecff;
-  text-align: right;
-  padding: 2px 6px 0 0;
-  border-top:1px solid #abdafb;
-  -moz-border-radius-bottomleft: 5px;
-  -moz-border-radius-bottomright: 5px;
-  -webkit-border-bottom-left-radius: 5px;
-  -webkit-border-bottom-right-radius: 5px;
+	border: none;
+	background: none;
+	padding: 0;
+	margin: 0;
+	text-align: right;
+}
+div.Popup .Footer input.Button {
+	font-size: 11px;
+	margin-right: 2px;
 }
 div.Popup h3 {
 	font-size: 120%;
@@ -1892,32 +1992,37 @@ ul.PanelDiscussions li strong {
   + New: there are new comments since the last viewed the discussion
 */
 .Mine { background: #e3f4ff; }
-li.New { background: #fffec1; }
+
 ul.DataList div.Meta a.Category {
    background: #fafafa;
    padding: 2px 4px;
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
 }
 ul.DataList li.Mine div.Meta a.Category {
    background: #eff7ff;
 }
-ul.DataList li.New div.Meta a.Category {
-   background: #fffed7;
-}
+
 ul.DataList div.Meta span.Announcement {
-	background: #e00;
-	color: #fff;
-	padding: 2px 4px;
+	background: #777777;
+	color: #ffffff;
+	padding: 1px 4px;
+   border-radius: 2px;
 	-moz-border-radius: 2px;
+   -webkit-border-radius: 2px;
+   border-radius: 2px;
    font-weight: bold;
 }
 ul.DataList div.Meta span.Closed {
-	background: #555;
+	background: #555555;
    color: #ffffff;
    font-weight: bold;
-	padding: 2px 4px;
+	padding: 1px 4px;
+   border-radius: 2px;
 	-moz-border-radius: 2px;
+   -webkit-border-radius: 2px;
+   border-radius: 2px;
 }
 
 
@@ -1955,10 +2060,16 @@ body.Discussion a.Bookmark {
 	margin: 13px 8px;
 }
 
+body.Discussion .Back {
+   padding: 3px 6px;
+   text-align: left;
+}
+
+
 /* =================================================================== Drafts */
 ul.Discussions div.ItemContent,
 ul.Drafts div.ItemContent {
-   margin: 0 0 0 5px;
+   margin: 0 0 0 9px;
 }
 ul.Drafts div.ItemContent a.Title,
 ul.Discussions div.ItemContent a.Title {
@@ -1966,7 +2077,9 @@ ul.Discussions div.ItemContent a.Title {
 }
 
 /* =============================================== Discussion & Comment Forms */
-
+li.Editing {
+	background: #E3F4FF;
+}
 div.CommentForm textarea {
    width: 656px;
    height: 100px;
@@ -1974,10 +2087,14 @@ div.CommentForm textarea {
    margin: 0 0 6px;
 }
 div.Comment div.CommentForm {
+	width: 652px;
 	background: none;
 	padding: 6px 4px;
 	border: 0;
 	clear: left;
+}
+div.Comment div.CommentForm textarea {
+	width: 643px;	
 }
 #DiscussionForm label {
    font-size: 14px;
@@ -1999,6 +2116,7 @@ body.Post #Content {
    padding: 6px;
 }
 #DiscussionForm form {
+   border-radius: 2px;
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    background: #c4e1ff none repeat scroll 0 0;
@@ -2010,7 +2128,6 @@ body.Post #Content {
    width: 910px;
    height: 100px;
    min-height: 100px;
-   max-height: 400px;
    margin: 0 0 6px;
 }
 #DiscussionForm input.InputBox {
@@ -2023,8 +2140,12 @@ body.Post #Content {
 #DiscussionForm div.Category label {
    padding: 0 8px 0 0;
 }
+div.CommentForm a.Back,
 div.CommentForm a.Cancel {
    float: left;
+}
+#DiscussionForm a.Cancel {
+	margin-left: 18px;
 }
 #DiscussionForm ul {
    margin: 0 0 20px;
@@ -2123,18 +2244,19 @@ h2.NewConversation a {
 body.Conversations h2 {
   margin: 0;
 }
-ul.Conversations li.New {
-  background: #fffec1;
-}
 ul.Conversations li.Active {
   cursor: pointer;
   background: #ffe;
 }
-ul.Conversations li.HasPhoto {
+ul.Conversations li.Item {
 	padding: 4px 5px;
 }
 ul.Conversations div.ItemContent {
    margin:0 0 0 5px;
+}
+ul.Conversations div.Meta a.Name {
+	color: #1E79A7;
+	font-weight: bold;
 }
 
 
@@ -2143,6 +2265,8 @@ ul.Conversations div.ItemContent {
 	background: #E9F9FF;
 	padding: 4px 8px 8px;
 	margin: 1px 0 0;
+   border-bottom-left-radius: 2px;
+   border-bottom-right-radius: 2px;
   -moz-border-radius-bottomleft: 2px;
   -moz-border-radius-bottomright: 2px;
   -webkit-border-bottom-left-radius: 2px;
@@ -2173,7 +2297,10 @@ body.add #Content {
    width: auto;
 }
 #ConversationForm form {
-	-moz-border-radius:2px 2px 2px 2px;
+   border-radius: 2px;
+	-moz-border-radius: 2px;
+   -webkit-border-radius: 2px;
+   border-radius: 2px;
 	background:none repeat scroll 0 0 #c4e1ff;
 	border:1px solid #7caccb;
 	margin:0;
@@ -2211,8 +2338,10 @@ body.Conversations a.Cancel {
 }
 div.Popup #ConversationForm form {
 	background: none;
+   -border-radius: 0;
 	-moz-border-radius: 0;
 	-webkit-border-radius: 0;
+   border-radius: 0;
 	padding: 10px;
 }
 div.Popup #ConversationForm h2 {
@@ -2224,4 +2353,40 @@ div.Popup #ConversationForm h2 {
 div.Popup #ConversationForm textarea.MultiComplete,
 div.Popup #ConversationForm .TextBox {
 	width: 478px;
+}
+
+/* Upload Progress Bar */
+div.UploadProgress {
+	margin: 10px 0;
+	background: url('images/upload-progress-back.gif') repeat;
+	width: 200px;
+	z-index: 0;
+	color: #fff;
+	text-shadow: 0 1px 1px #333;
+	border: 1px solid #0c3c7e;
+   border-radius: 2px;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+   border-radius: 2px;
+}
+div.UploadProgress div {
+	padding: 2px 0;
+}
+div.UploadProgress div strong {
+	font-weight: bold;
+}
+div.UploadProgress div.Foreground,
+div.UploadProgress div.Background {
+	position: absolute;
+}
+div.UploadProgress div.Background {
+	width: 0;
+	background: url('images/upload-bg.gif') repeat;
+	z-index: 1;
+}
+div.UploadProgress div.Foreground {
+	text-indent: 6px;
+	overflow: visible;
+	white-space: nowrap;
+	z-index: 2;
 }

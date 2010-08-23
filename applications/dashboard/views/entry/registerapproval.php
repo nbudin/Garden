@@ -1,5 +1,5 @@
 <?php if (!defined('APPLICATION')) exit(); ?>
-<h1><?php echo T("Apply for membership") ?></h1>
+<h1><?php echo T("Apply for Membership") ?></h1>
 <div class="Box">
    <?php
    $TermsOfServiceUrl = Gdn::Config('Garden.TermsOfService', '#');
@@ -15,11 +15,12 @@
          <?php
             echo $this->Form->Label('Email', 'Email');
             echo $this->Form->TextBox('Email');
+				echo '<span id="EmailUnavailable" class="Incorrect" style="display: none;">'.T('Email Unavailable').'</span>';
          ?>
       </li>
       <li>
          <?php
-            echo $this->Form->Label('Name', 'Name');
+            echo $this->Form->Label('Username', 'Name');
             echo $this->Form->TextBox('Name');
             echo '<span id="NameUnavailable" class="Incorrect" style="display: none;">'.T('Name Unavailable').'</span>';
          ?>
@@ -55,7 +56,7 @@
          ?>
       </li>
       <li>
-         <?php echo $this->Form->Button('Apply →'); ?>
+         <?php echo $this->Form->Button('Apply &rarr;'); ?>
       </li>
    </ul>
    <?php echo $this->Form->Close(); ?>

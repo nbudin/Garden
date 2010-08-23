@@ -17,8 +17,6 @@ $PluginInfo['Debugger'] = array(
    'RequiredPlugins' => FALSE, // This is an array of plugin names/versions that this plugin requires
    'HasLocale' => FALSE, // Does this plugin have any locale definitions?
    'RegisterPermissions' => array('Plugins.Debugger.View','Plugins.Debugger.Manage'), // Permissions that should be added to the application. These will be prefixed with "Plugins.PluginName."
-   'SettingsUrl' => '/dashboard/plugin/debugger', // Url of the plugin's settings page.
-   'SettingsPermission' => 'Plugins.Debugger.Manage', // The permission required to view the SettingsUrl.
    'PluginUrl' => 'http://vanillaforums.org/addons/debugger',
    'Author' => "Mark O'Sullivan",
    'AuthorEmail' => 'mark@vanillaforums.com',
@@ -31,7 +29,7 @@ Gdn::FactoryInstall(Gdn::AliasDatabase, 'Gdn_DatabaseDebug', dirname(__FILE__).D
 Gdn::FactoryOverwrite($tmp);
 unset($tmp);
 
-class DebuggerPlugin implements Gdn_IPlugin {
+class DebuggerPlugin extends Gdn_Plugin {
    // Specifying "Base" as the class name allows us to make the method get called for every
    // class that implements a base class's method. For example, Base_Render_After
    // would allow all controllers that call Controller.Render() to have that method
@@ -53,44 +51,51 @@ class DebuggerPlugin implements Gdn_IPlugin {
          $Sender->Head = new HeadModule($Sender);
          
       $Sender->Head->AddCss('/plugins/Debugger/style.css');
+
+
       //$Session = Gdn::Session();
       //if ($Session->CheckPermission('Plugins.Debugger.View')) {
-         $String = '<div id="Sql">';
-         $Database = Gdn::Database();
-         if(!is_null($Database)) {
-            $Queries = $Database->Queries();
-            $QueryTimes = $Database->QueryTimes();
-            $String .= '<h3>'.count($Queries).' queries in '.$Database->ExecutionTime().'s</h3>';
-            foreach ($Queries as $Key => $QueryInfo) {
-               $Query = $QueryInfo['Sql'];
-               // this is a bit of a kludge. I found that the regex below would mess up when there were incremented named parameters. Ie. it would replace :Param before :Param0, which ended up with some values like "'4'0".
-               if(isset($QueryInfo['Parameters']) && is_array($QueryInfo['Parameters'])) {
-                  $tmp = $QueryInfo['Parameters'];
-                  arsort($tmp);
-                  foreach ($tmp as $Name => $Parameter) {
-                     $Pattern = '/(.+)('.$Name.')([\W\s]*)(.*)/';
-                     $Replacement = "$1'".htmlentities($Parameter, ENT_COMPAT, 'UTF-8')."'$3$4";
-                     $Query = preg_replace($Pattern, $Replacement, $Query);
-                  }
-               }
-               $String .= $QueryInfo['Method']
-                  .'<small>'.number_format($QueryTimes[$Key], 6).'s</small>'
-                  .'<pre>'.$Query.';</pre>';
+      $String = '<div id="Sql">';
+
+      // Add the canonical Url.
+      if (method_exists($Sender, 'CanonicalUrl')) {
+         $CanonicalUrl = $Sender->CanonicalUrl();
+
+         $String .= '<div class="CanonicalUrl"><b>'.T('Canonical Url')."</b>: <a href=\"$CanonicalUrl\">$CanonicalUrl</a></div>";
+      }
+
+      $Database = Gdn::Database();
+      $SQL = $Database->SQL();
+      if(!is_null($Database)) {
+         $Queries = $Database->Queries();
+         $QueryTimes = $Database->QueryTimes();
+         $String .= '<h3>'.count($Queries).' queries in '.$Database->ExecutionTime().'s</h3>';
+         foreach ($Queries as $Key => $QueryInfo) {
+            $Query = $QueryInfo['Sql'];
+            // this is a bit of a kludge. I found that the regex below would mess up when there were incremented named parameters. Ie. it would replace :Param before :Param0, which ended up with some values like "'4'0".
+            if(isset($QueryInfo['Parameters']) && is_array($QueryInfo['Parameters'])) {
+               $tmp = $QueryInfo['Parameters'];
+
+               $Query = $SQL->ApplyParameters($Query, $tmp);
             }
+            $String .= $QueryInfo['Method']
+               .'<small>'.@number_format($QueryTimes[$Key], 6).'s</small>'
+               .'<pre>'.$Query.';</pre>';
          }
-         global $Start;
-         $String .= '<h3>Page completed in '.round(Now() - $_SERVER['REQUEST_TIME'], 4).'s</h3>';
-            /*
-            <div>
-               <strong>Application:</strong> ' . $Sender->ApplicationFolder . ';
-               <strong>Controller:</strong> ' . $Sender->ClassName . ';
-               <strong>Method:</strong> ' . $Sender->RequestMethod . ';
-            </div>
-         </div>';
-              */
-         $String .= '</div>';
-         echo $String;
-      //}
+      }
+      global $Start;
+      $String .= '<h3>Page completed in '.round(Now() - $_SERVER['REQUEST_TIME'], 4).'s</h3>';
+         /*
+         <div>
+            <strong>Application:</strong> ' . $Sender->ApplicationFolder . ';
+            <strong>Controller:</strong> ' . $Sender->ClassName . ';
+            <strong>Method:</strong> ' . $Sender->RequestMethod . ';
+         </div>
+      </div>';
+           */
+      $String .= '</div>';
+      echo $String;
+   //}
    }
    
    public function PluginController_Debugger_Create($Sender) {

@@ -12,16 +12,55 @@ class VanillaHooks implements Gdn_IPlugin {
    
    public function UserModel_SessionQuery_Handler(&$Sender) {
       // Add some extra fields to the session query
-      $Sender->SQL->Select('u.CountDiscussions, u.CountUnreadDiscussions, u.CountDrafts, u.CountBookmarks');
+      //$Sender->SQL->Select('u.CountDiscussions, u.CountUnreadDiscussions, u.CountDrafts, u.CountBookmarks');
    }
    
+	// Remove data when deleting a user
+   public function UserModel_BeforeDeleteUser_Handler($Sender) {
+      $UserID = GetValue('UserID', $Sender->EventArguments);
+      $Options = GetValue('Options', $Sender->EventArguments, array());
+      $Options = is_array($Options) ? $Options : array();
+
+		$Sender->SQL->Delete('UserDiscussion', array('UserID' => $UserID));
+		$Sender->SQL->Delete('Draft', array('InsertUserID' => $UserID));
+      
+      $DeleteMethod = GetValue('DeleteMethod', $Options, 'delete');
+      if ($DeleteMethod == 'delete') {
+         $Sender->SQL->Delete('Comment', array('InsertUserID' => $UserID));
+      } else if ($DeleteMethod == 'wipe') {
+			$Sender->SQL->From('Comment')
+				->Join('Discussion d', 'c.DiscussionID = d.DiscussionID')
+				->Delete('Comment c', array('d.InsertUserID' => $UserID));
+
+         $Sender->SQL->Update('Comment')
+            ->Set('Body', T('The user and all related content has been deleted.'))
+            ->Set('Format', 'Deleted')
+            ->Where('InsertUserID', $UserID)
+            ->Put();
+      } else {
+         // Leave comments
+      }
+		$Sender->SQL->Delete('Discussion', array('InsertUserID' => $UserID));
+
+      // Remove the user's profile information related to this application
+      $Sender->SQL->Update('User')
+         ->Set(array(
+				'CountDiscussions' => 0,
+				'CountUnreadDiscussions' => 0,
+				'CountComments' => 0,
+				'CountDrafts' => 0,
+				'CountBookmarks' => 0
+			))
+         ->Where('UserID', $UserID)
+         ->Put();
+
+   }
+
    public function Base_Render_Before(&$Sender) {
       // Add menu items.
       $Session = Gdn::Session();
       if ($Sender->Menu) {
-         $Sender->Menu->AddLink(T('Discussions'), T('Discussions'), '/discussions', FALSE);
-         if ($Session->IsValid())
-            $Sender->Menu->AddLink(T('Discussions'), T('New Discussion'), '/post/discussion', FALSE);
+         $Sender->Menu->AddLink('Discussions', T('Discussions'), '/discussions', FALSE);
       }
    }
    
@@ -31,7 +70,7 @@ class VanillaHooks implements Gdn_IPlugin {
          $Sender->AddProfileTab(T('Discussions'), 'profile/discussions/'.$Sender->User->UserID.'/'.urlencode($Sender->User->Name));
          // Add the discussion tab's css
          $Sender->AddCssFile('vanillaprofile.css', 'vanilla');
-         $Sender->AddJsFile('/js/library/jquery.gardenmorepager.js');
+         $Sender->AddJsFile('jquery.gardenmorepager.js');
          $Sender->AddJsFile('discussions.js');
       }
    }
@@ -47,10 +86,10 @@ class VanillaHooks implements Gdn_IPlugin {
 	 * Add the discussion search to the search.
 	 * @param SearchController $Sender
 	 */
-	public function SearchController_Search_Handler($Sender) {
+	public function SearchModel_Search_Handler($Sender) {
 		include_once(dirname(__FILE__).DS.'..'.DS.'models'.DS.'class.vanillasearchmodel.php');
 		$SearchModel = new VanillaSearchModel();
-		$SearchModel->Search($Sender->SearchModel);
+		$SearchModel->Search($Sender);
 	}
    
    // Load some information into the BuzzData collection
@@ -78,9 +117,11 @@ class VanillaHooks implements Gdn_IPlugin {
    
    public function ProfileController_Discussions_Create(&$Sender) {
       $UserReference = ArrayValue(0, $Sender->RequestArgs, '');
-      $Offset = ArrayValue(1, $Sender->RequestArgs, 0);
+		$Username = ArrayValue(1, $Sender->RequestArgs, '');
+      $Offset = ArrayValue(2, $Sender->RequestArgs, 0);
       // Tell the ProfileController what tab to load
-      $Sender->SetTabView($UserReference, 'Discussions', 'Profile', 'Discussions', 'Vanilla');
+		$Sender->GetUserInfo($UserReference, $Username);
+      $Sender->SetTabView('Discussions', 'Profile', 'Discussions', 'Vanilla');
       
       // Load the data for the requested tab.
       if (!is_numeric($Offset) || $Offset < 0)
@@ -103,7 +144,7 @@ class VanillaHooks implements Gdn_IPlugin {
          $Offset,
          $Limit,
          $CountDiscussions,
-         'profile/discussions/'.Gdn_Format::Url($Sender->User->Name).'/%1$s/'
+         'profile/discussions/'.$Sender->User->UserID.'/'.Gdn_Format::Url($Sender->User->Name).'/%1$s/'
       );
       
       // Deliver json data if necessary
@@ -134,11 +175,9 @@ class VanillaHooks implements Gdn_IPlugin {
    
    public function Base_GetAppSettingsMenuItems_Handler(&$Sender) {
       $Menu = &$Sender->EventArguments['SideMenu'];
-      $Menu->AddItem('Forum', T('Forum'));
-      $Menu->AddLink('Forum', T('General'), 'vanilla/settings/general', 'Vanilla.Settings.Manage');
-      $Menu->AddLink('Forum', T('Spam'), 'vanilla/settings/spam', 'Vanilla.Spam.Manage');
       $Menu->AddLink('Forum', T('Categories'), 'vanilla/settings/managecategories', 'Vanilla.Categories.Manage');
-      $Menu->AddLink('Forum', Gdn::Translate('Advanced'), 'vanilla/settings/advanced', 'Vanilla.Settings.Manage');
+      $Menu->AddLink('Forum', T('Spam'), 'vanilla/settings/spam', 'Vanilla.Spam.Manage');
+      $Menu->AddLink('Forum', T('Advanced'), 'vanilla/settings/advanced', 'Vanilla.Settings.Manage');
    }
    
    public function Setup() {

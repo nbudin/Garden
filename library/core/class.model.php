@@ -23,11 +23,6 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
  * @namespace Garden.Core
  */
 
-
-if (!defined('APPLICATION'))
-   exit();
-
-
 /**
  * Represents, enforces integrity, and aids in the management of: data. This
  * generic model can be instantiated (with the table name it is intended to
@@ -42,7 +37,7 @@ class Gdn_Model extends Gdn_Pluggable {
    /**
     * An object representation of the current working dataset.
     *
-    * @var object
+    * @var Gdn_DataSet
     */
    public $Data;
 
@@ -108,7 +103,7 @@ class Gdn_Model extends Gdn_Pluggable {
     * related to this model. This object is defined and populated with
     * $this->DefineSchema().
     *
-    * @var object
+    * @var Gdn_Schema
     */
    public $Schema;
    
@@ -135,7 +130,7 @@ class Gdn_Model extends Gdn_Pluggable {
     * object. By default, this object only enforces maxlength, data types, and
     * required fields (defined when $this->DefineSchema() is called).
     *
-    * @var object
+    * @var Gdn_Validation
     */
    public $Validation;
 
@@ -226,9 +221,20 @@ class Gdn_Model extends Gdn_Pluggable {
     */
    public function Insert($Fields) {
       $Result = FALSE;
+      $this->AddInsertFields($Fields);
       if ($this->Validate($Fields, TRUE)) {
-         $this->AddInsertFields($Fields);
-         $Result = $this->SQL->Insert($this->Name, $Fields);
+         // Strip out fields that aren't in the schema.
+         // This is done after validation to allow custom validations to work.
+         $SchemaFields = $this->Schema->Fields();
+         $Fields = array_intersect_key($Fields, $SchemaFields);
+
+         // Quote all of the fields.
+         $QuotedFields = array();
+         foreach ($Fields as $Name => $Value) {
+            $QuotedFields[$this->SQL->QuoteIdentifier(trim($Name, '`'))] = $Value;
+         }
+
+         $Result = $this->SQL->Insert($this->Name, $QuotedFields);
       }
       return $Result;
    }
@@ -242,9 +248,27 @@ class Gdn_Model extends Gdn_Pluggable {
     */
    public function Update($Fields, $Where = FALSE, $Limit = FALSE) {
       $Result = FALSE;
-      if ($this->Validate($Fields)) {
+
+      // primary key (always included in $Where when updating) might be "required"
+      $AllFields = $Fields;
+      if (is_array($Where))
+         $AllFields = array_merge($Fields, $Where); 
+         
+      if ($this->Validate($AllFields)) {
          $this->AddUpdateFields($Fields);
-         $Result = $this->SQL->Put($this->Name, $Fields, $Where, $Limit);
+
+         // Strip out fields that aren't in the schema.
+         // This is done after validation to allow custom validations to work.
+         $SchemaFields = $this->Schema->Fields();
+         $Fields = array_intersect_key($Fields, $SchemaFields);
+
+         // Quote all of the fields.
+         $QuotedFields = array();
+         foreach ($Fields as $Name => $Value) {
+            $QuotedFields[$this->SQL->QuoteIdentifier(trim($Name, '`'))] = $Value;
+         }
+
+         $Result = $this->SQL->Put($this->Name, $QuotedFields, $Where, $Limit);
       }
       return $Result;
    }
@@ -257,6 +281,9 @@ class Gdn_Model extends Gdn_Pluggable {
     * @todo add doc
     */
    public function Delete($Where = '', $Limit = FALSE, $ResetData = FALSE) {
+      if(is_numeric($Where))
+         $Where = array($this->Name.'ID' => $Where);
+
       if($ResetData) {
          $this->SQL->Delete($this->Name, $Where, $Limit);
       } else {
@@ -302,7 +329,7 @@ class Gdn_Model extends Gdn_Pluggable {
     * @param unknown_type $OrderDirection
     * @param unknown_type $Limit
     * @param unknown_type $Offset
-    * @return unknown
+    * @return Gdn_DataSet
     * @todo add doc
     */
    public function GetWhere($Where = FALSE, $OrderFields = '', $OrderDirection = 'asc', $Limit = FALSE, $Offset = FALSE) {
@@ -328,6 +355,7 @@ class Gdn_Model extends Gdn_Pluggable {
     * @todo add doc
     */
    public function Validate($FormPostValues, $Insert = FALSE) {
+      $this->DefineSchema();
       return $this->Validation->Validate($FormPostValues, $Insert);
    }
 

@@ -1,16 +1,44 @@
 jQuery(document).ready(function($) {
-   // Categories->Add() && Categories->Edit()
-   // Hide/reveal the permissions grids when the AllowDiscussions checkbox is un/checked.
-   $('[name=Category/AllowDiscussions]').click(function() {
-      if ($(this).attr('checked'))
-         $('#Permissions').slideDown('fast');
-      else
-         $('#Permissions').slideUp('fast');
+
+   if ($.fn.alphanumeric)
+      $('#Form_UrlCode').alphanumeric({allow:"-"});
+
+   // Map plain text category to url code
+   $("#Form_Name").keyup(function(event) {
+      if ($('#Form_CodeIsDefined').val() == '0') {
+         $('#UrlCode').show();
+         val = $(this).val().replace(/[ ]+/g, '-').replace(/[^a-z0-9\-]+/gi,'').toLowerCase();
+         $("#Form_UrlCode").val(val);
+         $("#UrlCode span").text(val);
+      }
    });
-   // Categories->Add() && Categories->Edit()
+   // Make sure not to override any values set by the user.
+   $('#UrlCode span').text($('#UrlCode input').val());
+   $("#Form_UrlCode").focus(function() {
+      $('#Form_CodeIsDefined').val('1')
+   });
+   $('#UrlCode input, #UrlCode a.Save').hide();
+   if ($('#UrlCode input').val() == '')
+      $('#UrlCode').hide();
+   
+   // Reveal input when "change" button is clicked
+   $('#UrlCode a, #UrlCode span').click(function() {
+      $('#UrlCode').find('input,span,a').toggle();
+      $('#UrlCode span').text($('#UrlCode input').val());
+      $('#UrlCode input').focus();
+      return false;
+   });
+
+   // Hide/reveal the permissions grids when the AllowDiscussions checkbox is un/checked.
+   $('[name=Category/IsParent]').click(function() {
+      if ($(this).attr('checked'))
+         $('#Permissions,#UrlCode').slideUp('fast');
+      else
+         $('#Permissions,#UrlCode').slideDown('fast');
+   });
    // Hide onload if unchecked   
-   if (!$('[name=Category/AllowDiscussions]').attr('checked'))
-      $('#Permissions').hide();
+   if ($('[name=Category/IsParent]').attr('checked'))
+      $('#Permissions,#UrlCode').hide();
    
    // Categories->Delete()
    // Hide/reveal the delete options when the DeleteDiscussions checkbox is un/checked.
@@ -41,12 +69,11 @@ jQuery(document).ready(function($) {
          var transientKey = gdn.definition('TransientKey');
          var tableId = $($.tableDnD.currentTable).attr('id');
          var data = $.tableDnD.serialize() + '&TableID=' + tableId + '&DeliveryType=VIEW&Form/TransientKey=' + transientKey;
-         $.post(gdn.combinePaths(webRoot, 'index.php/vanilla/settings/sortcategories/'), data, function(response) {
+         $.post(gdn.combinePaths(webRoot, 'index.php?p=/vanilla/settings/sortcategories/'), data, function(response) {
             if (response == 'TRUE') {
                // Reload the page content...
-               $.get(gdn.combinePaths(webRoot, '/index.php/vanilla/settings/managecategories/?DeliveryType=VIEW'), function(data){
-                  $('#Content form').remove();
-                  $('#Content').append(data);
+               $.get(gdn.combinePaths(webRoot, '/index.php?p=/vanilla/settings/managecategories/&DeliveryType=VIEW'), function(data){
+                  $('#Content').html(data);
                   $('table.Sortable tbody tr td').effect("highlight", {}, 1000);
                   $("table.Sortable").tableDnD({onDrop: saveAndReload});
                });

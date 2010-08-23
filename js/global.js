@@ -13,7 +13,7 @@ jQuery(document).ready(function($) {
       var d = new Date();
       if (d.getHours() != $(this).val()) {
          $.post(
-            gdn.combinePaths(gdn.definition('WebRoot', ''), 'index.php/utility/setclienthour/' + d.getHours() + '/' + gdn.definition('TransientKey')),
+            gdn.combinePaths(gdn.definition('WebRoot', ''), 'index.php?p=/utility/setclienthour/' + d.getHours() + '/' + gdn.definition('TransientKey')),
             'DeliveryType=BOOL'
          );
       }
@@ -29,6 +29,11 @@ jQuery(document).ready(function($) {
       $('textarea.Autogrow').livequery(function() {
          $(this).autogrow();
       });
+      
+   $.postParseJson = function(json) {
+      if (json.Data) json.Data = $.base64Decode(json.Data);
+      return json;
+   }
 		
 	gdn = { };
 
@@ -53,15 +58,17 @@ jQuery(document).ready(function($) {
    }
 
    // Main Menu dropdowns
+	/*
    if ($.fn.menu)
       $('#Menu').menu({
          showDelay: 0,
          hideDelay: 0
       });
-      
+	*/
+	
    // Go to notifications if clicking on a user's notification count
    $('li.UserNotifications a span').click(function() {
-      document.location = gdn.combinePaths(gdn.definition('UrlRoot', ''), '/profile/notifications');
+      document.location = gdn.combinePaths(gdn.definition('WebRoot', ''), 'profile/notifications');
       return false;
    });
    
@@ -102,8 +109,8 @@ jQuery(document).ready(function($) {
       $('.AjaxForm').handleAjaxForm();
    
    // If a message group is clicked, hide it.
-   $('div.Messages ul').live('click', function() {
-      $(this).parents('div.Messages').fadeOut('fast', function() {
+   $('div.Messages').live('click', function() {
+      $(this).fadeOut('fast', function() {
          $(this).remove();
       });
    });
@@ -116,6 +123,16 @@ jQuery(document).ready(function($) {
          });
       }, 3000);
    });
+	
+	// Show hoverhelp on hover
+	$('.HoverHelp').hover(
+		function() {
+			$(this).find('.Help').show();
+		},
+		function() {
+			$(this).find('.Help').hide();
+		}
+	);
 
    // If a page loads with a hidden redirect url, go there after a few moments.
    var RedirectUrl = gdn.definition('RedirectUrl', '');
@@ -130,7 +147,7 @@ jQuery(document).ready(function($) {
          var transientKey = gdn.definition('TransientKey');
          var data = $.tableDnD.serialize() + '&DeliveryType=BOOL&TableID=' + tableId + '&TransientKey=' + transientKey;
          var webRoot = gdn.definition('WebRoot', '');
-         $.post(gdn.combinePaths(webRoot, 'index.php/dashboard/utility/sort/'), data, function(response) {
+         $.post(gdn.combinePaths(webRoot, 'index.php?p=/dashboard/utility/sort/'), data, function(response) {
             if (response == 'TRUE')
                $('#'+tableId+' tbody tr td').effect("highlight", {}, 1000);
 
@@ -140,8 +157,7 @@ jQuery(document).ready(function($) {
    // Format email addresses
    $('span.Email').livequery(function() {
       var html = $(this).html();
-      var email = this;
-      email = $(email).html().replace(/<em>dot<\/em>/g, '.').replace(/<strong>at<\/strong>/g, '@');
+      var email = $(this).html().replace(/<em>dot<\/em>/ig, '.').replace(/<strong>at<\/strong>/ig, '@');
       $(this).html('<a href="mailto:' + email + '">' + email + '</a>');
    });
 
@@ -202,6 +218,12 @@ jQuery(document).ready(function($) {
          var item = targets[i];
          $target = $(item.Target);
          switch(item.Type) {
+            case 'Ajax':
+               $.ajax({
+                  type: "POST",
+                  url: item.Data
+               });
+               break;
             case 'Append':
                $target.append(item.Data);
                break;
@@ -213,6 +235,9 @@ jQuery(document).ready(function($) {
                break;
             case 'Prepend':
                $target.prepend(item.Data);
+               break;
+            case 'Redirect':
+               window.location.replace(item.Data);
                break;
             case 'Remove':
                $target.remove();
@@ -242,7 +267,7 @@ jQuery(document).ready(function($) {
    
    // Add a spinner onclick of buttons with this class
    $('input.SpinOnClick').live('click', function() {
-      $(this).after('<span class="AfterButtonLoading">&nbsp;</span>').removeClass('SpinOnClick');
+      $(this).before('<span class="AfterButtonLoading">&nbsp;</span>').removeClass('SpinOnClick');
    });
    
    // Confirmation for item removals
@@ -253,3 +278,146 @@ jQuery(document).ready(function($) {
    });
    
 });
+
+	
+/**
+ * jQuery BASE64 functions
+ * 
+ * 	<code>
+ * 		Encodes the given data with base64. 
+ * 		String $.base64Encode ( String str )
+ *		<br />
+ * 		Decodes a base64 encoded data.
+ * 		String $.base64Decode ( String str )
+ * 	</code>
+ * 
+ * Encodes and Decodes the given data in base64.
+ * This encoding is designed to make binary data survive transport through transport layers that are not 8-bit clean, such as mail bodies.
+ * Base64-encoded data takes about 33% more space than the original data. 
+ * This javascript code is used to encode / decode data using base64 (this encoding is designed to make binary data survive transport through transport layers that are not 8-bit clean). Script is fully compatible with UTF-8 encoding. You can use base64 encoded data as simple encryption mechanism.
+ * If you plan using UTF-8 encoding in your project don't forget to set the page encoding to UTF-8 (Content-Type meta tag). 
+ * This function orginally get from the WebToolkit and rewrite for using as the jQuery plugin.
+ * 
+ * Example
+ * 	Code
+ * 		<code>
+ * 			$.base64Encode("I'm Persian."); 
+ * 		</code>
+ * 	Result
+ * 		<code>
+ * 			"SSdtIFBlcnNpYW4u"
+ * 		</code>
+ * 	Code
+ * 		<code>
+ * 			$.base64Decode("SSdtIFBlcnNpYW4u");
+ * 		</code>
+ * 	Result
+ * 		<code>
+ * 			"I'm Persian."
+ * 		</code>
+ * 
+ * @alias Muhammad Hussein Fattahizadeh < muhammad [AT] semnanweb [DOT] com >
+ * @link http://www.semnanweb.com/jquery-plugin/base64.html
+ * @see http://www.webtoolkit.info/
+ * @license http://www.gnu.org/licenses/gpl.html [GNU General Public License]
+ * @param {jQuery} {base64Encode:function(input))
+ * @param {jQuery} {base64Decode:function(input))
+ * @return string
+ */
+
+(function($){
+	
+	var keyString = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+	
+	var uTF8Encode = function(string) {
+		string = string.replace(/\x0d\x0a/g, "\x0a");
+		var output = "";
+		for (var n = 0; n < string.length; n++) {
+			var c = string.charCodeAt(n);
+			if (c < 128) {
+				output += String.fromCharCode(c);
+			} else if ((c > 127) && (c < 2048)) {
+				output += String.fromCharCode((c >> 6) | 192);
+				output += String.fromCharCode((c & 63) | 128);
+			} else {
+				output += String.fromCharCode((c >> 12) | 224);
+				output += String.fromCharCode(((c >> 6) & 63) | 128);
+				output += String.fromCharCode((c & 63) | 128);
+			}
+		}
+		return output;
+	};
+	
+	var uTF8Decode = function(input) {
+		var string = "";
+		var i = 0;
+		var c = c1 = c2 = 0;
+		while ( i < input.length ) {
+			c = input.charCodeAt(i);
+			if (c < 128) {
+				string += String.fromCharCode(c);
+				i++;
+			} else if ((c > 191) && (c < 224)) {
+				c2 = input.charCodeAt(i+1);
+				string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+				i += 2;
+			} else {
+				c2 = input.charCodeAt(i+1);
+				c3 = input.charCodeAt(i+2);
+				string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+				i += 3;
+			}
+		}
+		return string;
+	}
+	
+	$.extend({
+		base64Encode: function(input) {
+			var output = "";
+			var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+			var i = 0;
+			input = uTF8Encode(input);
+			while (i < input.length) {
+				chr1 = input.charCodeAt(i++);
+				chr2 = input.charCodeAt(i++);
+				chr3 = input.charCodeAt(i++);
+				enc1 = chr1 >> 2;
+				enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+				enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+				enc4 = chr3 & 63;
+				if (isNaN(chr2)) {
+					enc3 = enc4 = 64;
+				} else if (isNaN(chr3)) {
+					enc4 = 64;
+				}
+				output = output + keyString.charAt(enc1) + keyString.charAt(enc2) + keyString.charAt(enc3) + keyString.charAt(enc4);
+			}
+			return output;
+		},
+		base64Decode: function(input) {
+			var output = "";
+			var chr1, chr2, chr3;
+			var enc1, enc2, enc3, enc4;
+			var i = 0;
+			input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+			while (i < input.length) {
+				enc1 = keyString.indexOf(input.charAt(i++));
+				enc2 = keyString.indexOf(input.charAt(i++));
+				enc3 = keyString.indexOf(input.charAt(i++));
+				enc4 = keyString.indexOf(input.charAt(i++));
+				chr1 = (enc1 << 2) | (enc2 >> 4);
+				chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				chr3 = ((enc3 & 3) << 6) | enc4;
+				output = output + String.fromCharCode(chr1);
+				if (enc3 != 64) {
+					output = output + String.fromCharCode(chr2);
+				}
+				if (enc4 != 64) {
+					output = output + String.fromCharCode(chr3);
+				}
+			}
+			output = uTF8Decode(output);
+			return output;
+		}
+	});
+})(jQuery);

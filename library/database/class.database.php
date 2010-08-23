@@ -40,7 +40,7 @@ class Gdn_Database {
    private $_CurrentResultSet;
    
    /** @var PDO The connectio to the database. */
-   protected $_Connection = FALSE;
+   protected $_Connection = NULL;
    
    
    protected $_SQL = NULL;
@@ -51,11 +51,11 @@ class Gdn_Database {
     * @return PDO The connection to the database.
     */
    public function Connection() {
-      if($this->_Connection === FALSE) {
+      if(!is_object($this->_Connection)) {
          try {
             $this->_Connection = new PDO(strtolower($this->Engine) . ':' . $this->Dsn, $this->User, $this->Password, $this->ConnectionOptions);
-	    if($this->ConnectionOptions[1002])
-		$this->Query($this->ConnectionOptions[1002]);
+            if($this->ConnectionOptions[1002])
+               $this->Query($this->ConnectionOptions[1002]);
          } catch (Exception $ex) {
             trigger_error(ErrorMessage('An error occurred while attempting to connect to the database', $this->ClassName, 'Connection', $ex->getMessage()), E_USER_ERROR);
          }
@@ -96,14 +96,14 @@ class Gdn_Database {
     * Begin a transaction on the database.
     */
    public function BeginTransaction() {
-      if($this->_InTransaction)
+      if(!$this->_InTransaction)
          $this->_InTransaction = $this->Connection()->beginTransaction();
    }
    
    public function CloseConnection() {
-      if (Gdn::Config('Database.PersistentConnection') !== TRUE) {
+      if (!Gdn::Config('Database.PersistentConnection')) {
          $this->CommitTransaction();
-         $this->_Connection = null;
+         $this->_Connection = NULL;
       }
    }
    
@@ -190,7 +190,7 @@ class Gdn_Database {
             if(empty($Port)) {
                $Dsn = sprintf('host=%s;dbname=%s;', $Host, $Dbname);
             } else {
-               $Dsn = sprintf('host=%s;port=%s;dbname=$s;', $Host, $Port, $Dbname);
+               $Dsn = sprintf('host=%s;port=%s;dbname=%s;', $Host, $Port, $Dbname);
             }
          }
       }
@@ -204,9 +204,10 @@ class Gdn_Database {
     * @param string $Sql A string of SQL to be executed.
     * @param array $InputParameters An array of values with as many elements as there are bound parameters in the SQL statement being executed.
     */
-   public function Query($Sql, $InputParameters = NULL, $Event = '') {
-		if($Event) {
+   public function Query($Sql, $InputParameters = NULL, $Options = array()) {
+		if (isset($Options['Event'])) {
 			// TODO: Raise an event so the query can be overridden.
+         
 		}
 		
       if ($Sql == '')
@@ -234,15 +235,14 @@ class Gdn_Database {
       if ($PDOStatement === FALSE) {
          trigger_error(ErrorMessage($this->GetPDOErrorMessage($this->Connection()->errorInfo()), $this->ClassName, 'Query', $Sql), E_USER_ERROR);
       }
-      
-      $Result = TRUE;
-      // Did this query modify data in any way?
-      if (preg_match('/^\s*"?(insert)\s+/i', $Sql)) {
-         $this->_CurrentResultSet = $this->Connection()->lastInsertId(); // TODO: APPARENTLY THIS IS NOT RELIABLE WITH DB'S OTHER THAN MYSQL
-      } else {
-         // TODO: LOOK INTO SEEING IF AN UPDATE QUERY CAN RETURN # OF AFFECTED RECORDS?
 
-         if (!preg_match('/^\s*"?(update|delete|replace|create|drop|load data|copy|alter|grant|revoke|lock|unlock)\s+/i', $Sql)) {
+      $ReturnType = GetValue('ReturnType', $Options);
+      
+      // Did this query modify data in any way?
+      if ($ReturnType == 'ID' || preg_match('/^\s*"?(insert)\s+/i', $Sql)) {
+         $this->_CurrentResultSet = $this->Connection()->lastInsertId();
+      } else {
+         if ($ReturnType == 'DataSet' || !preg_match('/^\s*"?(update|delete|replace|create|drop|load data|copy|alter|grant|revoke|lock|unlock)\s+/i', $Sql)) {
             // Create a DataSet to manage the resultset
             $this->_CurrentResultSet = new Gdn_DataSet();
             $this->_CurrentResultSet->Connection = $this->Connection();
