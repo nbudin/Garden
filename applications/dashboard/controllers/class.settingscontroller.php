@@ -11,7 +11,7 @@ Contact Vanilla Forums Inc. at support [at] vanillaforums [dot] com
 /**
  * Garden Settings Controller
  */
-class SettingsController extends DashboardController {
+class SettingsController extends GardenController {
    
    public $Uses = array('Form', 'Database');
    public $ModuleSortContainer = 'Dashboard';
@@ -27,7 +27,7 @@ class SettingsController extends DashboardController {
          
       $this->Filter = $Filter;
       $this->Permission('Garden.Applications.Manage');
-      $this->AddSideMenu('dashboard/settings/applications');
+      $this->AddSideMenu('garden/settings/applications');
 
       $this->AddJsFile('applications.js');
       $this->Title(T('Applications'));
@@ -40,11 +40,11 @@ class SettingsController extends DashboardController {
       
       // Loop through all of the available visible apps and mark them if they have an update available
       // Retrieve the list of apps that require updates from the config file
-      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -76,15 +76,12 @@ class SettingsController extends DashboardController {
                $this->Form->AddError(strip_tags($e->getMessage()));
             }
             if ($this->Form->ErrorCount() == 0) {
-               $Test = ProxyRequest(Url('/dashboard/settings/testaddon/Application/'.$ApplicationName.'/'.$Session->TransientKey().'?DeliveryType=JSON', TRUE));
-               if ($Test != 'Success') {
-                  $this->Form->AddError(sprintf(T('The application could not be enabled because it generated a fatal error: <pre>%s</pre>'), strip_tags($Test)));
-               } else {
-                  $Validation = new Gdn_Validation();
-                  $ApplicationManager->RegisterPermissions($ApplicationName, $Validation);
-                  $ApplicationManager->EnableApplication($ApplicationName, $Validation);
-                  $this->Form->SetValidationResults($Validation->Results());
-               }
+               $Validation = new Gdn_Validation();
+               $ApplicationManager->RegisterPermissions($ApplicationName, $Validation);
+               $ApplicationManager->EnableApplication($ApplicationName, $Validation);
+               if ($ApplicationManager->ApplicationHasSetup($ApplicationName))
+                  $ApplicationManager->ApplicationSetup($ApplicationName, $this->ControllerName, $Validation);
+               $this->Form->SetValidationResults($Validation->Results());
             }
             
          }
@@ -99,7 +96,7 @@ class SettingsController extends DashboardController {
     */
    public function Configure() {
       $this->Permission('Garden.Settings.Manage');
-      $this->AddSideMenu('dashboard/settings/configure');
+      $this->AddSideMenu('garden/settings/configure');
       $this->AddJsFile('email.js');
       $this->Title(T('General Settings'));
       
@@ -185,7 +182,7 @@ class SettingsController extends DashboardController {
       $this->RequiredAdminPermissions[] = 'Garden.Users.Approve';
       $this->FireEvent('DefineAdminPermissions');
       $this->Permission($this->RequiredAdminPermissions, '', FALSE);
-      $this->AddSideMenu('dashboard/settings');
+      $this->AddSideMenu('garden/settings');
 
       $UserModel = Gdn::UserModel();
       
@@ -196,9 +193,9 @@ class SettingsController extends DashboardController {
       $this->AddDefinition('CountUsers', $CountUsers);
       $this->BuzzData[T('Users')] = number_format($CountUsers);
       // Get the number of new users in the last day
-      $this->BuzzData[T('New users in the last day')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Gdn_Format::ToDateTime(strtotime('-1 day')))));
+      $this->BuzzData[T('New users in the last day')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Format::ToDateTime(strtotime('-1 day')))));
       // Get the number of new users in the last week
-      $this->BuzzData[T('New users in the last week')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Gdn_Format::ToDateTime(strtotime('-1 week')))));
+      $this->BuzzData[T('New users in the last week')] = number_format($UserModel->GetCountWhere(array('DateInserted >=' => Format::ToDateTime(strtotime('-1 week')))));
       
       // Get recently active users
       $this->ActiveUserData = $UserModel->GetActiveUsers(5);
@@ -274,14 +271,14 @@ class SettingsController extends DashboardController {
 
          // Dump the entire set of information into the definition list (jQuery
          // will pick it up and ping the VanillaForums.org server with this info).
-         $this->AddDefinition('UpdateChecks', Gdn_Format::Serialize($UpdateData));
+         $this->AddDefinition('UpdateChecks', Format::Serialize($UpdateData));
       }
    }
    
    public function Initialize() {
       parent::Initialize();
       if ($this->Menu)
-         $this->Menu->HighlightRoute('/dashboard/settings');
+         $this->Menu->HighlightRoute('/garden/settings');
    }
    
    public function Plugins($Filter = '', $TransientKey = '') {
@@ -294,7 +291,7 @@ class SettingsController extends DashboardController {
          
       $this->Filter = $Filter;
       $this->Permission('Garden.Plugins.Manage');
-      $this->AddSideMenu('dashboard/settings/plugins');
+      $this->AddSideMenu('garden/settings/plugins');
       
       // Retrieve all available plugins from the plugins directory
       $PluginManager = Gdn::Factory('PluginManager');
@@ -303,11 +300,11 @@ class SettingsController extends DashboardController {
       
       // Loop through all of the available plugins and mark them if they have an update available
       // Retrieve the list of plugins that require updates from the config file
-      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -330,16 +327,9 @@ class SettingsController extends DashboardController {
             if (array_key_exists($PluginName, $this->EnabledPlugins) === TRUE) {
                $PluginManager->DisablePlugin($PluginName);
             } else {
-               // Check to see if there are any fatal errors when the plugin is included:
-               $Session = Gdn::Session();
-               $Test = ProxyRequest(Url('/dashboard/settings/testaddon/Plugin/'.$PluginName.'/'.$Session->TransientKey().'?DeliveryType=JSON', TRUE));
-               if ($Test != 'Success') {
-                  $this->Form->AddError(sprintf(T('The plugin could not be enabled because it generated a fatal error: <pre>%s</pre>'), strip_tags($Test)));
-               } else {
-                  $Validation = new Gdn_Validation();
-                  if (!$PluginManager->EnablePlugin($PluginName, $Validation))
-                     $this->Form->SetValidationResults($Validation->Results());
-               }
+               $Validation = new Gdn_Validation();
+               if (!$PluginManager->EnablePlugin($PluginName, $Validation))
+                  $this->Form->SetValidationResults($Validation->Results());
             }
          } catch (Exception $e) {
             $this->Form->AddError(strip_tags($e->getMessage()));
@@ -355,7 +345,7 @@ class SettingsController extends DashboardController {
     */
    public function Registration($RedirectUrl = '') {
       $this->Permission('Garden.Registration.Manage');
-      $this->AddSideMenu('dashboard/settings/registration');
+      $this->AddSideMenu('garden/settings/registration');
       
       $this->AddJsFile('registration.js');
       $this->Title(T('Registration'));
@@ -369,7 +359,7 @@ class SettingsController extends DashboardController {
       $this->Form->SetModel($ConfigurationModel);
       
       // Load roles with sign-in permission
-      $RoleModel = new RoleModel();
+      $RoleModel = new Gdn_RoleModel();
       $this->RoleData = $RoleModel->GetByPermission('Garden.SignIn.Allow');
       
       // Get the currently selected default roles
@@ -435,26 +425,6 @@ class SettingsController extends DashboardController {
       
       $this->Render();
    }
-   
-   /**
-    * Test and addon to see if there are any fatal errors during install.
-    */
-   public function TestAddon($AddonType = '', $AddonName = '', $TransientKey = '') {
-      if (!in_array($AddonType, array('Plugin', 'Application', 'Theme')))
-         $AddonType = 'Plugin';
-         
-      $Session = Gdn::Session();
-      $AddonName = $Session->ValidateTransientKey($TransientKey) ? $AddonName : '';
-      $AddonManagerName = $AddonType.'Manager';
-      $TestMethod = 'Test'.$AddonType;
-      $AddonManager = Gdn::Factory($AddonManagerName);
-      if ($AddonName != '') {
-         $Validation = new Gdn_Validation();
-         $AddonManager->$TestMethod($AddonName, $Validation);
-      }
-
-      echo 'Success';
-   }
 
    /**
     * Theme management screen.
@@ -463,7 +433,7 @@ class SettingsController extends DashboardController {
       $this->Title(T('Themes'));
          
       $this->Permission('Garden.Themes.Manage');
-      $this->AddSideMenu('dashboard/settings/themes');
+      $this->AddSideMenu('garden/settings/themes');
 
       $Session = Gdn::Session();
       $ThemeManager = new Gdn_ThemeManager();
@@ -477,11 +447,11 @@ class SettingsController extends DashboardController {
       
       // Loop through all of the available themes and mark them if they have an update available
       // Retrieve the list of themes that require updates from the config file
-      $RequiredUpdates = Gdn_Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
+      $RequiredUpdates = Format::Unserialize(Gdn::Config('Garden.RequiredUpdates', ''));
       if (is_array($RequiredUpdates)) {
          foreach ($RequiredUpdates as $UpdateInfo) {
             if (is_object($UpdateInfo))
-               $UpdateInfo = Gdn_Format::ObjectAsArray($UpdateInfo);
+               $UpdateInfo = Format::ObjectAsArray($UpdateInfo);
                
             $NewVersion = ArrayValue('Version', $UpdateInfo, '');
             $Name = ArrayValue('Name', $UpdateInfo, '');
@@ -504,12 +474,7 @@ class SettingsController extends DashboardController {
             foreach ($this->AvailableThemes as $ThemeName => $ThemeInfo) {
                if ($ThemeInfo['Folder'] == $ThemeFolder) {
                   $Session->SetPreference('PreviewTheme', ''); // Clear out the preview
-                  $Test = ProxyRequest(Url('/dashboard/settings/testaddon/Theme/'.$ThemeName.'/'.$Session->TransientKey().'?DeliveryType=JSON', TRUE));
-                  if ($Test != 'Success') {
-                     $this->Form->AddError(sprintf(T('The theme could not be enabled because it generated a fatal error: <pre>%s</pre>'), strip_tags($Test)));
-                  } else {
-                     $ThemeManager->EnableTheme($ThemeName);
-                  }
+                  $ThemeManager->EnableTheme($ThemeName);
                }
             }
          } catch (Exception $e) {
@@ -540,18 +505,10 @@ class SettingsController extends DashboardController {
                $PreviewThemeFolder = $ThemeInfo['Folder'];
          }
       }
-      
-      // Check for errors
+
       $Session = Gdn::Session();
-      $Test = ProxyRequest(Url('/dashboard/settings/testaddon/Theme/'.$ThemeName.'/'.$Session->TransientKey().'?DeliveryType=JSON', TRUE));
-      if ($Test != 'Success') {
-         $this->Form->AddError(sprintf(T('The theme could not be previewed because it generated a fatal error: <pre>%s</pre>'), strip_tags($Test)));
-         $this->View = 'themes';
-         $this->Themes();
-      } else {
-         $Session->SetPreference(array('PreviewThemeName' => $PreviewThemeName, 'PreviewThemeFolder' => $PreviewThemeFolder));
-         Redirect('/');
-      }
+      $Session->SetPreference(array('PreviewThemeName' => $PreviewThemeName, 'PreviewThemeFolder' => $PreviewThemeFolder));
+      Redirect('/');
    }
    
    public function CancelPreview() {
