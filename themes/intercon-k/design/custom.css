@@ -128,8 +128,15 @@ a, a:link, a:visited, a:active {
 }
 
 div.Tabs, div.MessageForm {
-   background-color: #ffffa0;
-   border-bottom-color: #ca9a00;
+   background-color: #fff;
+}
+
+div.Tabs {
+   border-bottom: 2px #224099 solid;
+}
+
+div.MessageForm {
+   border-bottom: none;
 }
 
 div.Tabs li a, div.Tabs li a:link, div.Tabs li a:hover, div.Tabs li a:active, div.Tabs li a:visited, 
